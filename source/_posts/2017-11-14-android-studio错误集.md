@@ -51,7 +51,7 @@ android {
 **问题现场**：
 LinearLayout控件中orientation属性vertical显示错误警告
 **解决方案**：
-检查android studio的File -> Setting -> Language Injections中是否有相应AIDL配置，删除即可
+检查android studio的File -> Setting -> Language & Frameworks 中是否有相应AIDL配置，删除即可
 
 ### 所有style都提示no resources found
 **问题原因**：
