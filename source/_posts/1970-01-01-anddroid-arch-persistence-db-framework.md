@@ -12,6 +12,7 @@ FrameworkSQLiteOpenHelperFactory -- SupportSQLiteOpenHelper.Factory的实现类
 
 <!-- more -->
 #### Classes
+##### FrameworkSQLiteOpenHelperFactory
 **摘要**：
 SupportSQLiteOpenHelper.Factory的实现类。
 

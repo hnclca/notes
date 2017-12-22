@@ -12,6 +12,7 @@ MigrationTestHelper -- 数据库迁移测试辅助类
 
 <!-- more -->
 #### Classes
+##### MigrationTestHelper
 **摘要**：
 用于仪器测试，辅助创建旧版的数据库。
 拷贝由注解处理器根据room.schemaLocation创建的schema json文件到测试资源目录，并传递该路径到构造器中。

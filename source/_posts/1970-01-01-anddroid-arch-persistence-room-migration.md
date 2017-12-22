@@ -12,6 +12,7 @@ Migration -- 迁移方案基类
 
 <!-- more -->
 #### Classes
+##### Migration
 **摘要**：
 数据库迁移方案基类。
 每个迁移方案限定在两个版本间，由startVersion and endVersion指定。
