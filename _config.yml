@@ -103,3 +103,17 @@ jsonContent:
       excerpt: false
       categories: false
       tags: true
+
+# hexo-math
+math:
+  engine: 'mathjax'
+  mathjax:
+    src: custom_mathjax_source
+    config:
+      # MathJax config
+#  engine: 'katex'
+#  katex:
+#    css: custom_css_source
+#    js: custom_js_source
+#    config:
+      # KaTeX config

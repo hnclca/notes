@@ -8,14 +8,14 @@ tags:
 	- android
 ---
 
-°²×¿¼Ü¹¹×é¼şÊÇÒ»ÏµÁĞ°ïÖú¿ª·¢ÕßÉè¼Æ½¡×³ĞÔ¡¢Ò×²âÊÔ¡¢¿ÉÎ¬»¤µÄappsµÄ¿âµÄ¼¯ºÏ¡£
-![](/assets/images/2017/12/recommanded-architecture.png)
+å®‰å“æ¶æ„ç»„ä»¶æ˜¯ä¸€ç³»åˆ—å¸®åŠ©å¼€å‘è€…è®¾è®¡å¥å£®æ€§ã€æ˜“æµ‹è¯•ã€å¯ç»´æŠ¤çš„appsçš„åº“çš„é›†åˆã€‚
+![image](/assets/images/2017/12/recommanded-architecture.png)
 
 <!-- more -->
 
-### Ìí¼ÓÒÀÀµ¿â
+### æ·»åŠ ä¾èµ–åº“
 
-#### Ìí¼Ó¹È¸èMaven²Ö¿â
+#### æ·»åŠ è°·æ­ŒMavenä»“åº“
 ``` gradle
 allprojects {
     repositories {
@@ -25,70 +25,70 @@ allprojects {
 }
 ```
 
-#### Ìí¼Ó¼Ü¹¹×é¼ş
-##### ÉúÃüÖÜÆÚ¸ĞÖªLifecycle-aware
+#### æ·»åŠ æ¶æ„ç»„ä»¶
+##### ç”Ÿå‘½å‘¨æœŸæ„ŸçŸ¥Lifecycle-aware
 ``` gradle
 implementation "android.arch.lifecycle:runtime:1.0.3"
 annotationProcessor "android.arch.lifecycle:compiler:1.0.0"
 
-// »òÕß
+// æˆ–è€…
 implementation "android.arch.lifecycle:common-java8:1.0.0"
 ```
 
-##### LiveDataºÍViewModel
+##### LiveDataå’ŒViewModel
 ``` gradle
-// ¸Ã¿âÒÑ°üº¬android.arch.lifecycle:runtime¿â
+// è¯¥åº“å·²åŒ…å«android.arch.lifecycle:runtimeåº“
 implementation "android.arch.lifecycle:extensions:1.0.0"
 
-// Ê¹ÓÃReactiveStreams API
+// ä½¿ç”¨ReactiveStreams API
 implementation "android.arch.lifecycle:reactivestreams:1.0.0"
 
-// ÔÚ²âÊÔÖĞ¿ØÖÆºóÌ¨Ïß³Ì
+// åœ¨æµ‹è¯•ä¸­æ§åˆ¶åå°çº¿ç¨‹
 testImplementation "android.arch.core:core-testing:1.0.0"
 ```
 
-##### ³Ö¾Ã»¯Room
+##### æŒä¹…åŒ–Room
 ``` gradle
 implementation "android.arch.persistence.room:runtime:1.0.0"
 annotationProcessor "android.arch.persistence.room:compiler:1.0.0"
 
-// ²âÊÔRoomÇ¨ÒÆ
+// æµ‹è¯•Roomè¿ç§»
 testImplementation "android.arch.persistence.room:testing:1.0.0"
 
-// Ö§³ÖRxJava
+// æ”¯æŒRxJava
 implementation "android.arch.persistence.room:rxjava2:1.0.0"
 ```
 
-##### ·ÖÒ³Paging
+##### åˆ†é¡µPaging
 ``` gradle
 implementation "android.arch.paging:runtime:1.0.0-alpha4-1"
 ```
 
-### °ü½éÉÜ
+### åŒ…ä»‹ç»
 *	android.arch.core.executor.testing
-¼ÆÊıÈÎÎñÓëÍ¬²½ÈÎÎñÖ´ĞĞÆ÷
+è®¡æ•°ä»»åŠ¡ä¸åŒæ­¥ä»»åŠ¡æ‰§è¡Œå™¨
 
 *	android.arch.core.util
-Functionº¯Êı½Ó¿Ú
+Functionå‡½æ•°æ¥å£
 
 *	android.arch.lifecycle
-ÉúÃüÖÜÆÚ¸ĞÖª×é¼şLifecycle¡¢Êı¾İ³ÖÓĞ×é¼şLiveData¡¢Êı¾İ¹ÜÀí×é¼şViewModel
+ç”Ÿå‘½å‘¨æœŸæ„ŸçŸ¥ç»„ä»¶Lifecycleã€æ•°æ®æŒæœ‰ç»„ä»¶LiveDataã€æ•°æ®ç®¡ç†ç»„ä»¶ViewModel
 
 *	android.arch.paging
-·ÖÒ³Êı¾İÔ´DataSource, ·ÖÒ³Êı¾İÁĞ±íPagedList, ·ÖÒ³Êı¾İÊÊÅäÆ÷PagedListAdapter
+åˆ†é¡µæ•°æ®æºDataSource, åˆ†é¡µæ•°æ®åˆ—è¡¨PagedList, åˆ†é¡µæ•°æ®é€‚é…å™¨PagedListAdapter
 
 *	android.arch.persistence.db
 
 *	android.arch.persistence.db.framework
-SupportSQLiteOpenHelper.FactoryÊµÏÖÀà
+SupportSQLiteOpenHelper.Factoryå®ç°ç±»
 
 *	android.arch.persistence.room
-Êı¾İ¿â¶ÔÏóÓ³Éä¿âRoom: RoomDatabase»ùÀà£¬×¢½â±êÊ¶Database, Entities, Dao³éÏóÀà£¨×¢½â´¦ÀíÆ÷ÊµÏÖ£©
+æ•°æ®åº“å¯¹è±¡æ˜ å°„åº“Room: RoomDatabaseåŸºç±»ï¼Œæ³¨è§£æ ‡è¯†Database, Entities, DaoæŠ½è±¡ç±»ï¼ˆæ³¨è§£å¤„ç†å™¨å®ç°ï¼‰
 
 *	android.arch.persistence.room.migration
-Migration»ùÀà
+MigrationåŸºç±»
 
 *	android.arch.persistence.room.testing
-MigrationTestHelperÇ¨ÒÆ²âÊÔ¸¨ÖúÀà
+MigrationTestHelperè¿ç§»æµ‹è¯•è¾…åŠ©ç±»
 
 *	android.support.v7.recyclerview.extensions

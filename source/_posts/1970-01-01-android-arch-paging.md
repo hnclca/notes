@@ -484,7 +484,7 @@ PagedList.Config.Builder	setPrefetchDistance(int prefetchDistance)
 ##### PagedListAdapter&lt;T, VH extends RecyclerView.ViewHolder&gt;
 **摘要**：
 PagedListAdapterHelper用于实现PagedListAdapter的默认行为，如项目数计算，监听数据更新回调。
-当使用LiveData<PagedList>时更简单，数据可用时调用setList(PagedList)。
+使用LiveData<PagedList>时更简单(不是必须)，数据可用时调用setList(PagedList)。
 PagedListAdapter监听PagedList加载回调，并使用DiffUtil在后台线程中计算更细粒度的数据更新。
 更多数据加载时，处理列表的内部分页和新PagedList更新。
 
@@ -512,7 +512,7 @@ void	setList(PagedList<T> pagedList)
 实现PagedList到RecyclerView.Adapter的辅助类。
 PagedListAdapter包装类直接代替该辅助类更简单些。该类用于继承了不支持分页的Adapter基类的复杂类。
 更多数据加载时，处理列表的内部分页和新PagedList更新。
-PagedListAdapterHelper绑定到LiveData&lt;PagedList&gt;时更简单，它监听PagedList加载回调，收到新数据后在后台线程使用DiffUtil计算更新。
+PagedListAdapterHelper绑定到LiveData&lt;PagedList&gt;时更简单（不是必须），它监听PagedList加载回调，收到新数据后在后台线程使用DiffUtil计算更新。
 提供类似列表API的方法getItem(int) and getItemCount()供adapter获取展示数据。
 
 **库名**：
