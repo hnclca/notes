@@ -78,6 +78,7 @@ Function函数接口
 分页数据源DataSource, 分页数据列表PagedList, 分页数据适配器PagedListAdapter
 
 *	android.arch.persistence.db
+RoomDatabase，替代SQLiteDatabase
 
 *	android.arch.persistence.db.framework
 SupportSQLiteOpenHelper.Factory实现类
@@ -92,3 +93,42 @@ Migration基类
 MigrationTestHelper迁移测试辅助类
 
 *	android.support.v7.recyclerview.extensions
+DiffUtil相关扩展
+
+### 问题
+#### Schema export directory is not provided to the annotation processor
+##### 错误信息
+```
+Error:(33, 17) 警告: Schema export directory is not provided to the annotation processor so we cannot export the schema. You can either provide `room.schemaLocation` annotation processor argument OR set exportSchema to false.
+```
+
+##### 解决方案
+1. 禁用exportSchema
+``` java
+@Database(entities = { YourEntity.class }, version = 1, exportSchema = false)
+public abstract class AppDatabase extends RoomDatabase {
+
+   ...
+
+}
+```
+
+2. 配置导出路径
+``` gradle
+android {
+    // ... (compileSdkVersion, buildToolsVersion, etc)
+
+    defaultConfig {
+
+        // ... (applicationId, miSdkVersion, etc)
+
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
+    }
+
+    // ... (buildTypes, compileOptions, etc)
+}
+```
