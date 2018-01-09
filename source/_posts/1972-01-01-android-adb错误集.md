@@ -1,8 +1,8 @@
 ---
-title: adb错误集
+title: android-adb错误集
 comments: false
 toc: true
-date: 2017-04-08 09:44:15
+date: 1972-01-01 08:00:00
 tags:
 	- adb
 	- errors
@@ -29,7 +29,7 @@ udev访问需要有root权限
     $ sudo vim /etc/udev/rules.d/51-android.rules
     // 添加当前手机设备信息，注意这里只能使用“号不能使用‘
     SUBSYSTEM=="usb", ATTR{idVendor}=="18d1", MODE="0666", GROUP="plugdev" 
-    // 配置全局可读访问权限 
+    // 配置全局可读访问权限
     $ sudo chmod a+r /etc/udev/rules.d/51-android.rules
 ```
 3. 插拔手机，再次连接手机，调用adb devices即可解决。

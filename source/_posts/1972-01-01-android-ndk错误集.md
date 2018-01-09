@@ -1,10 +1,10 @@
 ---
-title: so错误集
+title: android ndk错误集
 comments: false
 toc: true
-date: 2017-03-02 09:44:09
+date: 1972-01-01 08:00:00
 tags:
-	- so
+	- jni
 	- errors
 ---
 
