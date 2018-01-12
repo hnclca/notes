@@ -29,7 +29,7 @@ tags:
 *	Android Support Library
 AppCompat, RecycleView, CardView, Design, ConstraintLayout
 *	Android Architecture Components
-ROOM, Lifecycle
+Room, Lifecycle
 *	Android Data Binding
 *	Dagger 2
 *	Retrofit
@@ -40,48 +40,58 @@ ROOM, Lifecycle
 
 ### 项目结构
 #### DI
-##### AndroidInjection与AndroidSupportInjection
-Dagger2提供的Android类型注入工具类。
+##### 组件
+###### AppComponent
+根组件，单例，由于application是平台实例化，这里使用了实例注入@BindsInstance。
 
-##### AndroidInjectionModule
+##### 模块
+###### AndroidInjectionModule或AndroidSupportInjectionModule
 Dagger2提供的Android类型实例依赖模块。
 
-##### AppInjector
+###### AppModule
+全局单例依赖对象。
+
+*	GithubService
+Retrofit建造实例，配置GsonConverter转换器与LiveDataCallAdapter回调监听。
+
+*	GithubDb
+Room建造实例。
+
+*	UserDao
+db.userDao()
+
+*	RepoDao
+db.repoDao()
+
+###### ViewModelModule
+使用@Binds提供了ViewModelProvider.Factory方法，使用Map MultiBinding将User, Repo, Search的ViewModel对象添加到Map中。
+
+*	SearchViewModel
+*	UserViewModel
+*	RepoViewModel
+
+###### MainActivityModule和FragmentBuildersModule
+使用了@ContributesAndroidInjector注解简化创建AndroidInjector实例方法。
+
+##### 辅助类
+###### AndroidInjection与AndroidSupportInjection
+Dagger2提供的Android类型注入工具类。
+**注意**:
+Dagger提供了DaggerAppCompatActivity和DaggerFragment基类，在基类中已调用了inject方法，直接继承时，无需手动调用。
+
+###### AppInjector
 辅助类，在Application中调用，激活AppComponent组件，使用registerActivityLifecycleCallbacks实现Activity类的统一注入。
 同时使用getSupportFragmentManager().registerFragmentLifecycleCallbacks实现fragment统一注入。
 **注意**:
 Dagger提供了DaggerAppCompatActivity和DaggerFragment基类，可移除，直接在Application中创建组件对象。
 
-##### Injectable
+###### Injectable
 自定义可注入接口，标识Activity/Fragment类是否可注入。
 **注意**:
 Dagger提供了DaggerAppCompatActivity和DaggerFragment基类，可移除。
 
-##### AppComponent
-根组件，单例，由于application是平台实例化，这里使用了实例注入@BindsInstance。
-
-##### AppModule
-###### 提供方法
-*	GithubService
-Retrofit建造实例，配置GsonConverter转换器与LiveDataCallAdapter回调监听。
-*	GithubDb
-Room建造实例。
-*	UserDao
-db.userDao()
-*	RepoDao
-db.repoDao()
-
-###### 依赖模块
-*	ViewModelModule
-
-##### ViewModelModule
-使用@Binds提供了ViewModelProvider.Factory方法，使用Map MultiBinding将User, Repo, Search的ViewModel对象添加到Map中。
-
-##### ViewModuleKey
+###### ViewModuleKey
 简单Mapkey，value类型为Class&lt;? extends ViewModel&gt;。
-
-##### MainActivityModule和FragmentBuildersModule
-使用了@ContributesAndroidInjector注解简化创建AndroidInjector实例方法。
 
 #### 线程
 ##### AppExecutors
@@ -90,59 +100,45 @@ db.repoDao()
 ##### 线程注解
 线程注解@MainThread， @WorkerThread
 
-#### Repository
+#### 数据层
 ##### RepoRepository & UserRepository
-Db（执行事务操作），Dao, Service, executors协作完成数据操作。
+使用Db, Dao, Service, executors协作完成数据操作。唯一暴露给界面层的对象。
 
-##### NetworkBoundResource
+###### NetworkBoundResource
 抽象db与service之间的公共交互。如数据源（本地与网络）监听，数据更新。由于这里涉及了两个数据源，所以引入了LiveData中介人。核心逻辑为：设置数据为加载状态，先查询本地数据库，如果不需要网络查询，直接返回本地数据，否则执行网络查询，成功则处理保存数据，再从数据库返回数据，否则返回数据加载失败信息。
-###### 实例方法
+
 * fetchFromNetwork
-调用抽象方法，完成网络数据获取。
+具体方法，调用抽象方法完成网络、本地数据获取逻辑。
 
-###### 抽象方法
 * loadFromDb()
-加载本地数据库数据。
-
 * shouldFetch(data)
-判断是否需要网络更新。
-
 * createCall()
-创建网络请求
-
 * processResponse(response)
-处理网络数据。
-
 * saveCallResult(data)
-保存数据
-
 * onFetchFailed()
-处理网络失败。
+抽象方法由子类实现各业务方法。
 
-##### FetchNextSearchPageTask
+###### FetchNextSearchPageTask
 获取搜索结果的下一页内容。
 
-##### Status
-枚举类，标识任务状态：加载中，成功，失败。
-
-##### Resource
+###### 与界面层通信数据包装类
+* Resource
 返回结果包装类：status, message, data(T)
 
-#### WebService
-##### GithubService
-管理Http APIs。
+* Status
+枚举类，标识数据状态：加载中，成功，失败。
 
-##### RepoSearchResponse
-POJO类，成员：total，nextPage，items
+###### GithubService
+管理Http APIs。负责网络数据获取。
 
-##### ApiResponse
-网络请求结果封装类。
+* ApiResponse
+网络请求结果包装类。
 成员：code, body(T), errorMessage, links(Map)
 解析headers取得连接匹配，通过links获取nextPage网址。
 
-#### Storage
-##### GithubDb
-###### entities
+###### GithubDb
+本地数据库管理类。
+
 *	User
 login, avatar_url, name, company, repos_url, blog
 primaryKeys: login
@@ -162,7 +158,6 @@ query, repoIds, totalCount, next
 primaryKeys: query
 TypeConverters: repoInds(List&lt;Integer&gt;, String)
 
-###### daos
 *	UserDao
 Inserts: User
 Querys: (login) -&gt; LiveData&lt;User&gt;
@@ -172,21 +167,21 @@ Inserts: Repos..., Contributors, Repositories, Repo, RepoSearchResult
 Querys: (login, name) -&gt; LiveData&lt;Repo&gt;, (repoOwner, repoName) -&gt; LiveData&lt;List&lt;Contributor&gt;&gt;, (owner) -&gt; LiveData&lt;List&lt;Repo&gt;&gt;, (query) -&gt; List&lt;RepoSearchResult&gt;, (repoIds) -&gt; LiveData&lt;List&lt;Repo&gt;&gt;, (query) -&gt; RepoSearchResult
 
 #### DataBinding
-##### BindingAdapters
-自定义visibleGone属性方法。
-
-##### FragmentBindingAdapters
-自定义imageUrl属性方法。实现Glide加载图片。这里需要传入上下文。所以构造函数为FragmentBindingAdapters(Fragment fragment)。
-
 ##### FragmentDataBindingComponent
-用于传递上下文给FragmentBindingAdapters。创建绑定时作为传递参数。
+绑定上下文参数，传递给DataBindingUtil。管理BindingAdapters。
 ``` java
         ContributorItemBinding binding = ContributorItemBinding
                 .inflate(LayoutInflater.from(parent.getContext()), parent, false, dataBindingComponent);
 ```
 
+###### BindingAdapters
+与上下文无关的BindingAdapters。
+
+###### FragmentBindingAdapters
+与上下文有关的BindingAdapters。
+
 #### ImageLoader
-Glide加载图片，FragmentBindingAdapters自定义的绑定适配器方法中调用。
+Glide加载图片，在FragmentBindingAdapters自定义的绑定适配器方法中调用。
 
 #### Logger
 使用Timber包装android.util.Log类。
@@ -216,45 +211,193 @@ Fragment生命周期持有数据对象。通过注册FragmentLifecycleCallbacks�
 用于判断何时获取网络数据的工具类。
 
 #### ViewModel
+界面层获取数据的唯一访问入口。
 ##### GithubViewModelFactory
 创建ViewModel工厂。ViewModel是使用集合依赖进行注入。
 
 ##### RepoViewModel
-仓库及其贡献者。静态内部类Repo持有RepoOwner与RepoName。返回Repo和List&lt;Contributor&gt;。
+仓库及其贡献者。输入RepoId，输出Repo及List&lt;Contributor&gt;。
 
 ##### SearchViewModel
-搜索关键字、仓库列表、下一页处理器。静态内部类LoadMoreState, NextPageHandler。
+搜索仓库。输入query，输出List&lt;Repo&gt;。
 
 ##### UserViewModel
-用户名、用户、仓库列表。
+用户及用户Repos。输入login，输出User, List&lt;Repo&gt;。
 
-#### others
+#### 界面工具
 ##### NavigationController
 MainActivity下属三个fragment间的导航控制控制器。
 
 ##### RetryCallback
-重试按钮回调。
+重试按钮回调接口。
 
 ##### DataBoundListAdapter
 使用数据绑定和DiffUtil的RecyclerView.Adapter基类。
 
+* RepoListAdapter
+* ContributorAdapter
+
 ##### DataBoundViewHolder
 DataBoundListAdapter相应的ViewHolder，持有binding(T)。
 
-##### RepoListAdapter && ContributorAdapter
-RepoList与ContributorList配置器
-
 ### 构建
-#### dagger配置
+#### DataBing配置
 ``` gradle
     dataBinding {
         enabled = true
     }
 ```
 
+#### 版本及库管理
+version.gradle
+##### 引入
+``` gradle
+buildscript {
+	apply from: 'version.gradle'
+    ...
+}
+```
+
+##### 变量
+``` gradle
+// 声明
+ext.deps = [:]
+def support = [:]
+support.v4 = "..."
+deps.support = support
+
+// 使用
+dependencies {
+	implementation deps.support.v4
+}
+```
+
+##### 方法
+``` gradle
+// 声明
+def addRepos(RepositoryHandler handler) {
+	handler.google()
+    handler.jcenter()
+    handler.maven { url '...' }
+}
+ext.addRepos = this.&addRepos
+
+// 使用
+allprojects {
+	addRepos(repositories)
+}
+```
+
+#### 测试
+##### 测试覆盖率
+``` gradle
+android {
+	buildTypes {
+    	debug {
+        	testCoverageEnabled !project.hasProperty('android.injected.invoked.from.ide')
+        }
+    }
+}
+
+jacoco {
+    toolVersion = "0.7.4+"
+}
+
+task fullCoverageReport(type: JacocoReport) {
+    dependsOn 'createDebugCoverageReport'
+    dependsOn 'testDebugUnitTest'
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+
+    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*',
+                      '**/*Test*.*', 'android/**/*.*',
+                      '**/*_MembersInjector.class',
+                      '**/Dagger*Component.class',
+                      '**/Dagger*Component$Builder.class',
+                      '**/*_*Factory.class',
+                      '**/*ComponentImpl.class',
+                      '**/*SubComponentBuilder.class']
+    def debugTree = fileTree(dir: "${buildDir}/intermediates/classes/debug", excludes: fileFilter)
+    def mainSrc = "${project.projectDir}/src/main/java"
+
+    sourceDirectories = files([mainSrc])
+    classDirectories = files([debugTree])
+    executionData = fileTree(dir: "$buildDir", includes: [
+            "jacoco/testDebugUnitTest.exec",
+            "outputs/code-coverage/connected/*coverage.ec"
+    ])
+}
+```
+
+##### 静态代码检查
+``` gradle
+android {
+    lintOptions {
+        lintConfig rootProject.file('lint.xml')
+    }
+}
+```
+
+##### 添加测试公共类文件夹
+``` gradle
+android {
+    sourceSets {
+        androidTest.java.srcDirs += "src/test-common/java"
+        test.java.srcDirs += "src/test-common/java"
+    }
+}
+```
+
 ### 测试
 #### 本地单元测试
-##### ViewModel
+##### WebService
+###### MockWebService
+com.squareup.okhttp3:mockwebserver:$versions.mockwebserver
+
+* startService
+``` java
+    @Before
+    public void createService() throws IOException {
+        mockWebServer = new MockWebServer();
+        service = new Retrofit.Builder()
+                .baseUrl(mockWebServer.url("/"))
+                .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(new LiveDataCallAdapterFactory())
+                .build()
+                .create(GithubService.class);
+    }
+```
+
+* stopService
+``` java
+    @After
+    public void stopService() throws IOException {
+        mockWebServer.shutdown();
+    }
+```
+
+* mockResponse
+``` java
+    private void enqueueResponse(String fileName, Map<String, String> headers) throws IOException {
+        InputStream inputStream = getClass().getClassLoader()
+                .getResourceAsStream("api-response/" + fileName);
+        BufferedSource source = Okio.buffer(Okio.source(inputStream));
+        MockResponse mockResponse = new MockResponse();
+        for (Map.Entry<String, String> header : headers.entrySet()) {
+            mockResponse.addHeader(header.getKey(), header.getValue());
+        }
+        mockWebServer.enqueue(mockResponse
+                .setBody(source.readString(StandardCharsets.UTF_8)));
+    }
+```
+
+* recordedRequest
+``` java
+    enqueueResponse("user-yigit.json");
+    RecordedRequest request = mockWebServer.takeRequest();
+```
 
 ##### Repository
 

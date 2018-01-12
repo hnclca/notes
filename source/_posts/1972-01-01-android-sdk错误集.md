@@ -8,7 +8,6 @@ tags:
 	- errors
 ---
 
-<<<<<<< HEAD
 ### android:imeOptions="actionSearch"属性不生效
 **问题现场**：
 弹出软键盘回车键不是搜索图标。
@@ -16,15 +15,6 @@ tags:
 **运行环境**：
 emulator API 23
 
-=======
-[TOC]
-
-### android:imeOptions="actionSearch"属性不生效
-**问题现场**：
-弹出软键盘回车键不是搜索图标。
-**运行环境**：
-emulator API 23
->>>>>>> 4810a71dee16f6dabd580309de0424e97ee4a5d5
 **解决方案**：
 同时指定android:inputType属性
 ```
@@ -33,7 +23,6 @@ android:inputType="textNoSuggestions"
 ```
 
 <!-- more -->
-<<<<<<< HEAD
 
 ### RecyclerView空白不显示数据
 **问题现场**：
@@ -44,5 +33,3 @@ RecyclerView的列表空白
 ```
 app:layoutManager="LinearLayoutManager"
 ```
-=======
->>>>>>> 4810a71dee16f6dabd580309de0424e97ee4a5d5

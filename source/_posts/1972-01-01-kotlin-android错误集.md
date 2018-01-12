@@ -114,3 +114,27 @@ constructor(private val creators: Map<Class<out ViewModel>, @JvmSuppressWildcard
 	...
 }
 ```
+
+### The @Rule 'instantTaskExecutorRule' must be public
+**错误信息**：
+```
+org.junit.internal.runners.rules.ValidationError: The @Rule 'instantTaskExecutorRule' must be public.
+```
+
+**运行环境**：
+*	Android Studio 3.0
+*	Android Gradle Plugin 3.0.0
+*	kotlin version 1.1.60
+
+**问题原因**：
+JUnit不能识别@Rule标识的属性。
+
+**解决方案**：
+注解属性的getter访问器。
+``` kotlin
+@get:Rule
+public val mActivityRule: ActivityTestRule<MainActivity> = ActivityTestRule(javaClass<MainActivity>())
+```
+
+**参考资料**：
+[kotlin-and-new-activitytestrule-the-rule-must-be-public](https://stackoverflow.com/questions/29945087/kotlin-and-new-activitytestrule-the-rule-must-be-public)
