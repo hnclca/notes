@@ -209,6 +209,7 @@ Error:Gradle: com.android.tools.aapt2.Aapt2Exception: AAPT2 error: check logs fo
 Error:Gradle: Execution failed for task ':app:processDebugResources'.
 > Failed to execute aapt
 ```
+
 **解决方案**：
 禁用aapt2
 ```
@@ -216,6 +217,27 @@ Error:Gradle: Execution failed for task ':app:processDebugResources'.
 android.enableAapt2=false
 ```
 
-##### 引入jar包后，还是找不类
+### 引入jar包后，还是找不类
 **解决方案**：
 在Project视图下，选择要引入的jar包，打开右键菜单，点击“add as Library”命令。
+
+### DexArchiveMergerException: Unable to merge dex
+**问题现场**：
+```
+Error:Execution failed for task ':app:transformDexArchiveWithExternalLibsDexMergerForDebugAndroidTest'.
+> java.lang.RuntimeException: java.lang.RuntimeException: com.android.builder.dexing.DexArchiveMergerException: Unable to merge dex
+```
+
+**解决方案**：
+添加dexmaker库，rebuild项目。
+com.linkedin.dexmaker:dexmaker-mockito:$versions.dexmaker
+
+### Dex: Error converting bytecode to dex
+**问题现场**：```
+Dex: Error converting bytecode to dex:
+Cause: signature-polymorphic method called without --min-sdk-version >= 26
+```
+
+**问题原因**:
+desugar(android studio 3.0)不支持MethodHandle.invoke和MethodHandle.invokeExact方法。
+

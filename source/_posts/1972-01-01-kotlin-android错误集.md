@@ -138,3 +138,140 @@ public val mActivityRule: ActivityTestRule<MainActivity> = ActivityTestRule(java
 
 **参考资料**：
 [kotlin-and-new-activitytestrule-the-rule-must-be-public](https://stackoverflow.com/questions/29945087/kotlin-and-new-activitytestrule-the-rule-must-be-public)
+
+### No public static parameters method on class XXXTest
+**错误信息**：
+```
+java.lang.Exception: No public static parameters method on class com.example.hnclcaa.githubapp.repository.NetworkBoundResourceTest
+```
+
+**运行环境**：
+*	Android Studio 3.0
+*	Android Gradle Plugin 3.0.0
+*	kotlin version 1.1.60
+
+**问题原因**：
+JUnit不能识别companion object中的静态方法。
+
+**解决方案**：
+使用@JvmStatic注解。
+``` kotlin
+@RunWith(Parameterized::class)
+class NetworkBoundResourceTest(val useRealExecutors: Boolean) {
+
+    companion object  {
+        @JvmStatic
+        @Parameterized.Parameters
+        fun param() = arrayListOf(true, false)
+    }
+}
+```
+
+### Class not found: "XXXTest"Empty test suite
+**错误信息**：
+```
+Class not found: "com.example.hnclcaa.githubapp.ExampleInstrumentedTest"Empty test suite
+```
+
+**运行环境**：
+*	Android Studio 3.0
+*	Android Gradle Plugin 3.0.0
+*	kotlin version 1.1.60
+
+**问题原因**：
+将AndroidTest类以本地测试方式执行。
+
+**解决方案**：
+第一次运行Test类时会选择本地还是设备测试，之后默认以第一次选择的方式运行Test类。此时需要通过Run -> Run命令切换运行方式。
+
+### Expression in a class literal has a nullable type 'T'
+**错误信息**：
+```
+Expression in a class literal has a nullable type 'T', use !! to make the type non-nullable
+```
+
+**运行环境**：
+*	Android Studio 3.0
+*	Android Gradle Plugin 3.0.0
+*	kotlin version 1.1.60
+
+**问题原因**：
+泛型不匹配导致，一个是&lt;T&gt;，另一个是&lt;out T&gt;
+
+**解决方案**：
+检查范型。
+
+**知识点**：
+clazz::class返回类型是KClass&lt;out T&gt;，而clazz.javaClass.kotlin返回类型是KClass&lt;T&gt;。
+
+### MockitoException:Cannot mock/spy class
+**错误信息**：
+```
+org.mockito.exceptions.base.MockitoException:
+Cannot mock/spy class com.example.hnclcaa.githubapp.ui.common.navigators.NavigatorController
+Mockito cannot mock/spy because :
+- final or anonymous class
+```
+
+**问题原因**：
+mock的对象是不可继承类或匿名类。
+
+**解决方案**：
+kotlin默认类为不可继承类。添加open修饰符。
+
+### MockitoException:Cannot mock/spy class
+**错误信息**：
+```
+org.mockito.exceptions.base.MockitoException:
+Cannot mock/spy class com.example.hnclcaa.githubapp.ui.common.navigators.NavigatorController
+Mockito cannot mock/spy because :
+- final or anonymous class
+```
+
+**问题原因**：
+mock的对象是不可继承类或匿名类。
+
+**解决方案**：
+kotlin默认类为不可继承类。添加open修饰符。
+
+### java.lang.NullPointerException on Mockito
+**错误信息**：
+```
+Caused by: java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.Object android.arch.lifecycle.MutableLiveData.getValue()' on a null object reference
+at com.example.hnclcaa.githubapp.ui.search.SearchViewModel.setQuery(SearchViewModel.kt:42)
+at com.example.hnclcaa.githubapp.ui.search.SearchFragment.doResearch(SearchFragment.kt:144)
+at com.example.hnclcaa.githubapp.ui.search.SearchFragment.access$doResearch(SearchFragment.kt:37)
+at com.example.hnclcaa.githubapp.ui.search.SearchFragment$initSearchInputListener$2.onKey(SearchFragment.kt:132)
+at android.view.View.dispatchKeyEvent(View.java:9230)
+...
+```
+
+**问题原因**：
+mock或verify的方法是不可继承或私有方法。
+
+**解决方案**：
+添加open修饰符。
+
+### org.mockito.exceptions.misusing.MissingMethodInvocationException
+**错误信息**：
+```
+org.mockito.exceptions.misusing.MissingMethodInvocationException:
+when() requires an argument which has to be 'a method call on a mock'.
+For example:
+when(mock.getArticles()).thenReturn(articles);
+
+Also, this error might show up because:
+1. you stub either of: final/private/equals()/hashCode() methods.
+Those methods *cannot* be stubbed/verified.
+Mocking methods declared on non-public parent classes is not supported.
+2. inside when() you don't call method on mock but on some other object.
+```
+
+**问题原因**：
+when传入参数只能是方法以外的成员对象。
+
+**解决方案**：
+使用doReturn/when句式。
+``` kotlin
+doReturn(loadMoreStatus).`when`(viewModel).getLoadMoreStatus()
+```
