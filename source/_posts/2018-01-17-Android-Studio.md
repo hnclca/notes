@@ -4,6 +4,7 @@ comments: false
 toc: true
 date: 2018-01-17 16:15:40
 tags:
+	- android
 	- IDE
 ---
 
@@ -780,3 +781,1114 @@ Fabric Gradle Plugin版本低于1.21.6时，会导致构建时间变长。升级
 ###### 第三方插件，如（Java Code Coverage Library和ProGuard，执行字节码增强的插件）
 ###### 多进程应用（仅冷交换会推送到非主进程）
 
+#### Emulator
+##### 文件结构
+###### 系统文件夹(-sysdir)
+sdk/system-images/android-apiLevel/variant/arch/
+
+* -kernel: kernel-qemu, kernel-ranchu
+二进制内核镜像。QEMU(quick emulator)1为goldfish, ranchu为QEMU2。
+
+* -system: system.img
+系统镜像的只读初始版本。包含对应API版本与平台的系统库和数据。
+
+* -ramdisk: ramdisk.img
+启动分区镜像。system.img的子集。在系统镜像挂载前由内核镜像加载。通常只包含一些二进制文件和初始化脚本。
+
+* -initdata(-init-data): userdata.img
+数据分区的初始版本。呈现在/data文件夹下，包含AVD的所有可写数据。使用-wipe-data可擦除修改后数据。
+
+###### 数据文件夹(-datadir)
+~/.android/avd/name.avd/
+
+* -data: userdata-qemu.img
+存储用户或特定会话数据分区镜像。比如已安装app数据、配置、数据库、文件、SDK路径等。
+新创建的AVD或应用-wipe-data选项，模拟器会复制userdata.img来创建该镜像。
+
+* -cache: cache.img
+缓存分区镜像。呈现在/cache文件下。初始为空。存储时时下载文件，由下载管理器或系统读写。关闭后文件被删除。可使用-cache选项保存文件。
+
+* -sdcard: sdcard.img
+可选SD卡分区镜像。模拟SD卡行为。使用mksdcard工具创建。存储在开发电脑上，必须在启动时加载。
+使用mtools可复制文件到该镜像。模拟器将SD卡视作字节池，不关心SD卡格式。
+-wipe-data不会对SD卡数据产生影响。删除SD卡数据要删除该镜像并重建SD卡。
+
+##### 命令行
+[emulator-commandline](https://developer.android.google.cn/studio/run/emulator-commandline.html)
+###### 格式
+```
+emulator -avd avd_name [ {-option [value]} ... ]
+emulator @avd_name [ {-option [value]} ... ]
+emulator -help-option
+```
+
+###### 使用
+```
+$ emulator --list-avds
+$ emulator -help-datadir
+```
+
+###### 快速启动
+* -no-snapshot-load
+* -no-snapshot-save
+* -no-snapshot
+
+###### 设备硬件
+mode: emulated、webcamX、none
+* -camera-back mode
+* -camera-front mode
+* -webcam-list
+
+```
+$ emulator @Nexus_5X_API_23 -camera-back webcam0
+```
+
+###### 内存
+* -memory size
+* -sdcard filepath
+* -wipe-data
+
+###### 调试
+* -debug tag
+* -debug-tag
+* -debug-no-tag
+all代表全部。
+```
+$ emulator @Nexus_5X_API_23 -debug init,metrics
+$ emulator -help-debug-tags
+```
+
+* -logcat logtags
+logtags格式为：componentName:logLevel
+```
+$ emulator @Nexus_5X_API_23 -logcat *:e
+$ adb logcat -help
+```
+
+* -show-kernel
+输出内核调试信息。
+
+* -verbose
+打印模拟器初始化信息到终端。
+
+##### 不支持功能
+* WLAN
+* 蓝牙
+* NFC
+* SD卡插入/弹出
+* 耳机
+* USB
+
+##### 配置
+###### skins
+* hardware.ini
+```
+# SDK/platforms/android-23/skins/WXGA800/hardware.ini
+# skin-specific hardware values
+hw.lcd.density=160
+vm.heapSize=48
+hw.ramSize=1024
+hw.keyboard.lid=no
+```
+
+* layout
+SDK/platforms/android-23/skins/WXGA800/layout
+SDK/skins/nexus_4/layout
+```
+parts {
+    device {
+        display {
+            width   320
+            height  480
+            x       0
+            y       0
+        }
+    }
+
+    portrait {
+        background {
+            image background_port.png
+        }
+
+        buttons {
+            power {
+                image  button_vertical.png
+                x 1229
+                y 616
+            }
+        }
+    }
+    ...
+}
+```
+
+### 构建配置
+#### 文件结构
+##### Gradle设置文件
+指定构建应用时包含模块。
+``` gradle
+include ':app'
+```
+
+##### 顶层构建文件
+模块共享的构建配置。使用buildscript{}代码块定义项目中所有模块共用的gradle存储区和依赖项。
+``` gradle
+buildscript {
+	repositories { ... }
+    dependencies { ... }
+}
+
+allprojects {
+	repositories { ... }
+}
+```
+
+##### 模块构建文件
+模块专用构建设置。自定义构建类型、产品风味，以及替换main/应用清单或顶层构建文件配置。
+``` gradle
+apply plugin: 'com.android.application'
+
+android {
+	...
+    defaultConfig { ... }
+    buildTypes { ... }
+    productFlavors { ... }
+}
+
+dependencies { ... }
+```
+
+##### 属性文件
+位于项目根目录。用于指定构建工具包本身的配置。
+
+* gradle.properties
+配置Gradle。如后台进程最大堆内存。
+
+* local.properties
+配置构建系统的本地环境属性。如SDK安装路径。该文件自动生成，不应纳入版本控制系统。
+
+##### 源集
+main为所有构建变体共用的代码和资源。其他源集目录可选，配置构建变体时，不会自动创建。
+优先级：构建变体 &gt; 构建类型 &gt; 产品风味 &gt; 主源集 &gt; 库依赖项
+
+```
+src/main
+src/<buildType>
+src/<productFlavor>
+src/<productFlavorBuildType>
+```
+
+#### 整洁原则
+##### 切割脚本
+根据脚本职责分割脚本，模块共享脚本置于顶层，模块专用脚本置于模块层。
+
+##### 整合依赖
+所有的依赖库、版本放置于一个脚本文件中，甚至共享到服务器，选择引用。
+``` gradle
+apply from: ‘http://company/1.0/projectStructure.gradle’
+```
+
+##### 任务、任务类型、动态任务
+编写代码，定义任务、任务类型或动态任务，减少重复代码。
+
+#### gradle应用
+##### 设置应用ID
+为不同的构建类型或产品类型创建不同的应用ID。清单中可用${applicationId}占位符。
+``` gradle
+android {
+    defaultConfig {
+        applicationId "com.example.myapp"
+    }
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+        }
+    }
+    productFlavors {
+        free {
+            applicationIdSuffix ".free"
+        }
+        pro {
+            applicationIdSuffix ".pro"
+        }
+    }
+}
+```
+
+##### 配置证书
+在build.gradle脚本中配置证书密钥并不安全。
+``` gradle
+storePassword System.getenv("KSTOREPWD")
+keyPassword System.getenv("KEYPWD")
+
+// 命令行读取
+storePassword System.console().readLine("\nKeystore password: ")
+keyPassword System.console().readLine("\nKey password: ")
+
+// 属性文件读取
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+keyAlias keystoreProperties['keyAlias']
+keyPassword keystoreProperties['keyPassword']
+storeFile file(keystoreProperties['storeFile'])
+storePassword keystoreProperties['storePassword']
+```
+
+##### 多版本apk构建
+[Build Multiple APKs](https://developer.android.google.cn/studio/build/configure-apk-splits.html)
+根据不同屏幕分辨率或ABI架构构建应用版本。
+###### densities
+默认生成通用版本。
+``` gradle
+android {
+  ...
+  splits {
+    density {
+      enable true
+      exclude "ldpi", "xxhdpi", "xxxhdpi"
+      compatibleScreens 'small', 'normal', 'large', 'xlarge'
+    }
+  }
+}
+```
+
+###### ABI
+除非配置，否则不生成通用版本。
+``` gradle
+android {
+  ...
+  splits {
+    abi {
+      enable true
+      reset()
+      include "x86", "armeabi-v7a", "mips"
+      universalApk false
+    }
+  }
+```
+
+###### version
+谷歌商店不允许app的不同版本共用一个版本号。
+``` gradle
+ext.abiCodes = ['armeabi-v7a':1, mips:2, x86:3]
+// ext.densityCodes = ['mdpi': 1, 'hdpi': 2, 'xhdpi': 3]
+
+import com.android.build.OutputFile
+android.applicationVariants.all { variant ->
+  variant.outputs.each { output ->
+    def baseAbiVersionCode = project.ext.abiCodes.get(output.getFilter(OutputFile.ABI))
+    if (baseAbiVersionCode != null) {
+      output.versionCodeOverride =
+              baseAbiVersionCode * 1000 + variant.versionCode
+    }
+  }
+}
+```
+
+###### 命名
+modulename-screendensityABI-buildvariant.apk
+
+##### 清单合并
+(Merged Manifest](https://developer.android.google.cn/studio/build/manifest-merge.html#_9)
+
+###### 合并规则标记
+* tools:node = "merge|remove|removeAll|replace|strict"
+向整个XML元素应用规则。
+
+* tools:remove|replace|strict = "attr,..."
+仅向清单标记中特定属性应用规则。
+
+* tools:selector = "com.example.lib1"
+仅对某个特定的导入库应用规则。
+
+* tools:overrideLibrary = "com.example.lib1"
+仅对某些特定的导入库应用规则。
+
+##### 清单占位符
+###### applicationId
+``` xml
+<intent-filter ... >
+    <action android:name="${applicationId}.TRANSMOGRIFY" />
+    ...
+</intent-filter>
+```
+
+###### 自定义
+``` xml
+<intent-filter ... >
+    <data android:scheme="http" android:host="${hostName}" ... />
+    ...
+</intent-filter>
+```
+gradle中配置实际值
+``` gradle
+android {
+    defaultConfig {
+        manifestPlaceholders = [hostName:"www.example.com"]
+    }
+    ...
+}
+```
+
+##### 共享自定义字段和资源值
+声明自定义属性与值
+``` gradle
+android {
+  ...
+  buildTypes {
+    debug {
+      buildConfigField("String", "BUILD_TIME", "\"0\"")
+      resValue("string", "build_time", "0")
+    }
+  }
+}
+```
+应用自定义属性
+``` java
+Log.i(TAG, BuildConfig.BUILD_TIME);
+Log.i(TAG, getString(R.string.build_time));
+```
+
+##### 依赖管理
+[Google's Maven repository](https://developer.android.google.cn/studio/build/dependencies.html#google-maven)
+
+###### 依赖类型
+* 本地库模块
+该模块名与setting.gradle中模块名一致。
+``` gradle
+compile project(':mylibrary')
+```
+
+* 本地二进制库
+gradle可读取相对模块build.gradle的路径中的jar文件。
+``` gradle
+compile fileTree(dir: 'libs', include: ['*.jar'])
+compile files('libs/foo.jar', 'libs/bar.jar')
+```
+
+* 远程二进制库
+远程库依赖的前提是，必须指定查找的远程库。
+``` gradle
+compile 'com.example.android:app-magic:12.3'
+compile group: 'com.example.android', name: 'app-magic', version: '12.3'
+```
+
+###### 依赖配置
+指定库存在的时期、对应的构建版本。
+
+* compile, apk, provided
+依赖库的添加方式：添加到编译并打包到apk，仅打包到apk，仅编译
+
+* buildin: debugCompile, testCompile, flavorCompile
+
+* custom: freeDebugApk
+``` gradle
+configurations {
+    // Initializes a placeholder for the freeDebugApk dependency configuration.
+    freeDebugApk {}
+}
+dependencies {
+    freeDebugApk fileTree(dir: 'libs', include: ['*.jar'])
+    // 指定库构建变体，配置publishNonDefault, defaultPublishConfig改变默认构建版本。
+    releaseCompile project(path: ':my-library-module', configuration: 'release')
+}
+```
+
+##### 代码压缩
+要求SDK tools 25.0.10及以上，Gradle Plugin 2.0.0及以上。
+
+###### 工具及配置
+SDK/tools/proguard
+proguard仅在发布编译时运行，Instant Run执行时会停用。若要在调试构建启用压缩代码功能，请关闭混淆和优化功能，代码压缩仅移除未使用代码。
+``` gradle
+android {
+    buildTypes {
+        debug {
+            minifyEnabled true
+            useProguard false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro'
+        }
+    }
+}
+```
+
+###### 混淆规则
+* proguard-android.txt -- 默认规则
+* proguard-android-optimize.txt -- 进一步优化规则
+* proguard-rules.pro -- 自定义规则
+* flavor2-rules.pro --产品风味规则
+
+``` gradle
+android {
+    ...
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                   'proguard-rules.pro'
+        }
+    }
+    productFlavors {
+        flavor1 {
+        }
+        flavor2 {
+            proguardFile 'flavor2-rules.pro'
+        }
+    }
+}
+```
+
+###### 输出文件
+文件目录：&lt;module-name&gt;/build/outputs/mapping/release/
+
+* dump.txt
+类文件的内部结构。
+
+* mapping.txt
+提供原始与混淆过的类、方法和字段名称之间的转换。
+proguard每次运行都会创建该文件，一定要每次混淆后保存副本。以便使用retrace工具追踪。
+``` bash
+retrace.bat|retrace.sh [-verbose] mapping.txt [<stacktrace_file>]
+retrace.bat -verbose mapping.txt obfuscated_trace.txt
+```
+
+* seeds.txt
+列出未进行混淆的类和成员。
+
+* usage.txt
+列出从apk移除的代码。
+
+###### 误移除情况
+
+* 只存在AndroidManifest.xml的引用
+* 应用调用的方法来自于JNI
+* 运行时（如反射或自检）操作代码
+
+
+##### 资源压缩
+要求SDK tools 25.0.10及以上，Gradle Plugin 2.0.0及以上。
+资源压缩需要与代码压缩协同工作。当代码压缩器移除未使用代码后，资源压缩器才能确定应用仍使用的资源。否则会因为存在资源引用，无法移除实际未使用资源。
+资源压缩器不会移除备用资源、values/文件夹中定义的资源。
+
+###### 工具与配置
+SDK/build-tools/26.0.2/lib/shrinkedAndroid.jar
+
+``` gradle
+android {
+    ...
+    buildTypes {
+        release {
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro'
+        }
+    }
+}
+```
+
+###### 自定义保留与舍弃资源
+使用tools属性工具在res/raw/keep.xml自定义压缩模式与规则。
+``` xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools"
+	tools:shrinkMode="strict"
+    tools:keep="@layout/l_used*_c,@layout/l_used_a,@layout/l_used_b*"
+    tools:discard="@layout/unused2" />
+```
+
+###### 备用资源移除
+资源压缩器不会移除备用资源。故使用插件的resConfigs来移除备用资源。
+``` gradle
+android {
+    defaultConfig {
+        ...
+        resConfigs "en", "fr"
+    }
+}
+```
+
+###### 输出文件
+文件目录：&lt;module-name&gt;/build/outputs/mapping/release/
+
+* resources.txt
+资源引用情况及移除资源详情。通过查找该文件，可以查看资源的引用及保留原因。
+
+##### MultiDex
+Android 5.0(API 21)之前的Dalvik限制单个classes.dex的方法总数不能超过65536，使用Dex分包支持库可解决64K引用限制问题。
+Android 5.0(API 21)及之后的ART虚拟机支持多个Dex加载，将多个dex整合为.oat可执行文件。因此无需配置Dex分包支持库。
+
+###### 规避64K限制
+减少应用代码调用的方法总数。
+
+* 检查应用的直接和传递依赖项
+* 使用Proguard移除未使用的代码
+
+###### 配置
+依赖库：com.android.support:multidex:1.0.1
+minSdkVersion低于21时需要配置。
+gradle配置项为multiDexEnabled。
+
+* 无自定义Application
+在清单中application中声明android.support.multidex.MultiDexApplication类。
+
+* 自定义Application
+``` java
+public class MyApplication extends MultiDexApplication { ... }
+```
+
+* 自定义Application不可继承
+``` java
+public class MyApplication extends SomeOtherApplication {
+  @Override
+  protected void attachBaseContext(Context base) {
+     super.attachBaseContext(context);
+     Multidex.install(this);
+  }
+}
+```
+
+###### 声明主DEX文件中需要的类
+multiDexKeepFile和multiDexKeepProguard指定的文件与模块build.gradle同一级别。
+
+* multiDexKeepFile
+声明类文件名multidex-config.txt，内容样式如下：
+```
+com/example/MyClass.class
+com/example/MyOtherClass.class
+```
+在gradle中配置
+``` gradle
+android {
+    buildTypes {
+        release {
+            multiDexKeepFile file 'multidex-config.txt'
+            ...
+        }
+    }
+}
+```
+
+* multiDexKeepProguard
+声明类文件名multidex-config.pro，语法与proguard相同：
+```
+-keep class com.example.MyClass
+-keep class com.example.MyClassToo
+```
+在gradle中配置
+``` gradle
+android {
+    buildTypes {
+        release {
+            multiDexKeepProguard 'multidex-config.pro'
+            ...
+        }
+    }
+}
+```
+
+###### 开发构建中Dex分包优化
+创建dev产品风味，设置minSdkVersion为21，禁用proguard，在开发构建中无需配置Dex分包支持库。
+Android 5.0(API 21)起启用pre-dexing构建功能：将每个应用模块和每个依赖项构建为单独的Dex文件。ART支持多个Dex文件加载，无需合并及主Dex中类确定导致的长时间计算。
+优点：进行快速的增量式构建。
+
+###### 测试
+AndroidJUnitRunner直接支持Dalvik可执行文件分包应用。前提是该应用application使用或继承MultiDexApplication，或调用了MultiDex.install(this)方法。
+否则，可通过自定义AndroidJUnitRunner类实现。
+``` java
+public void onCreate(Bundle arguments) {
+    MultiDex.install(getTargetContext());
+    super.onCreate(arguments);
+    ...
+}
+```
+**注意**:
+dex分包支持库不支持测试apk构建。
+
+###### 局限性
+* 辅助Dex文件较大时，可能导致应用ANR错误
+* 运行平台低于Android 4.0(API 14)时，应用启动或加载特定类时会出现问题
+* Android 5.0(API 21)以前Dex分包应用可能产生内存分配问题导致运行时崩溃
+
+##### Apk分析器
+
+1. 拖入apk到Editor区域
+2. Project视图中双击apk
+3. Build &gt; Analyze APK
+
+**注意**：
+不要分析增量Apk。区别增量Apk关键在于apk包下是否存在instant-run.zip。
+
+### 调试
+#### 开发者选项
+Setting &gt; About phone/System(8.0) &gt; Build number 7 times
+
+#### Logcat
+##### 消息格式
+```
+date time PID-TID/package priority/tag: message
+```
+
+##### 日志级别
+Assert &gt; Error &gt; Warn &gt; Info &gt; Debug &gt; Verbose
+**注意**：
+调试日志会在运行时去掉。错误、警告、信息日志会被保留。
+日志标记字符数不能大于23个。
+
+##### Screen Capture
+系统截图组合键：电源键+音量键-
+[在线设备效果图生成器](https://developer.android.google.cn/distribute/marketing-tools/device-art-generator.html)
+
+##### Screen Recorder
+最长三分钟的屏幕录像。
+
+#### Analyze Stacktrace
+##### open
+Analyze &gt; Analyze stacktrace
+
+##### auto detect
+监听剪贴板。
+Analyze stacktrace &gt; Automatically detect and analyze ...
+
+#### Layout Inspector
+检查运行时视图结构。
+仅能检查可调试应用，root或模拟器可以调试所有应用。
+Tools &gt; Android &gt; Layout Inspector
+
+##### 原理
+保存设备当前截图，存储为.li格式文件。设备视图变化后，不会自动更新。需要重新打开Layout Inspector捕获截图，存储新的.li文件。
+.li文件输出路径：&lt;project-name&gt;/captures/
+
+##### 视图结构
+* View Tree
+布局视图树
+
+* Screenshot
+显示带有可视边界视图的设备截图。
+
+* Propertise Table
+选中视图的布局属性面板。
+
+#### Pixel Perfect
+显示放大的应用视图，以检查像素位置或属性。辅助设计。
+
+##### 启动
+1. 连接设备
+2. 打开Android Studio，构建并运行应用
+3. Tools &gt; Android &gt; Android Device Monitor
+4. Window &gt; Open Perspective
+5. 双击Windows窗口的设备
+
+##### 界面结构
+* 视图树
+* 完美像素放大镜
+* 完美像素
+
+### 测试
+#### Gradle命令
+##### Local Unit Test
+报告输出路径：module/build/reports/tests/
+结果输出路径：module/build/test-results/
+
+``` bash
+gradlew test
+gradlew test<VariantName>UnitTest
+// 指定执行测试的测试方法
+gradlew testVariantNameUnitTest --tests *.sampleTestMethod
+```
+
+##### Instrumented Unit Test
+报告输出路径：module/build/reports/androidTests/connected/
+结果输出路径：module/build/outputs/androidTest-results/connected/
+``` bash
+gradlew connectedAndroidTest
+gradlew cAT // 任务名简写
+gradlew connected<VariantName>AndroidTest
+gradlew mylibrary:connectedAndroidTest  // 指定模块测试
+```
+
+##### 多模块报告
+报告输出路径：project/build/
+
+1. 项目级build.gradle添加报告插件
+``` gradle
+apply plugin: "android-reporting"
+```
+
+2. 执行mergeAndroidReports任务
+continue参数：跳过失败的测试直到完成所有测试用例。
+
+``` bash
+gradlew test mergeAndroidReports --continue
+gradlew connectedAndroidTest mergeAndroidReports
+```
+
+#### adb命令
+##### 格式
+```
+$ adb shell am instrument [flags] <test_package_name>/<runner_class>
+$ adb shell am instrument -w \
+> -e class com.android.demo.app.tests.Foo1,com.android.demo.app.tests.Foo2#bar3 \
+> com.android.demo.app.tests/android.support.test.runner.AndroidJUnitRunner
+```
+
+##### 参数
+* -w
+强制设备等待。保持shell开启直到测试完成。因为测试结果输出到标准输出设备，故如果不指定该参数，无法查看测试结果。
+
+* -r
+指定测试结果以原始格式输出。通常用于性能测试。该参数设计为配合-e参数一起使用。
+
+* -e &lt;test_options&gt;
+以键值对方式提供测试参数。am instrument工具会传递这些参数给指定的仪器类的onCreate方法中，存储到Bundle中。可以多次出现。只能用于AndroidJUnitRunner或InstrumentationTestRunner及其子类。
+[Instrument options](https://developer.android.google.cn/studio/test/command-line.html#AMOptionsSyntax)
+
+#### Espresso Test Recorder
+Run &gt; Record Espresso Test
+
+##### 添加断言
+只能添加三种断言。基于添加断言时的截图，获取到视图树结构。
+
+* textis
+* exist
+* does not exist
+
+##### UI交互
+断言编辑时间外，与app的交互，会生成tap/type记录下来。
+
+#### Monkey
+发送伪随机用户事件流对app执行压力测试的工具。
+应用崩溃、收到未处理错误或ANR时，Monkey会终止执行。
+
+##### 命令格式
+``` bash
+$ adb shell monkey [options] <event-count>
+$ adb shell monkey -p package.name -v 500
+$ adb shell monkey --help
+```
+
+##### 参数
+推荐参数：打开日志，一个或多个应用限制，非零延迟，至少30秒运行时间。
+
+###### 基本配置
+日志类型。
+
+* -v
+
+###### 操作限制
+如果不指定操作的应用，Monkey会跳转到任意应用。
+按应用名或意图类型指定操作范围，可出现多次。
+
+* -p package.name
+* -c Intent.category
+
+###### 事件类型和频率
+随机种子、事件延迟、事件类型百分比等
+
+* -s seed
+* --throttle milliseconds
+* --pct-touch percent
+
+
+######调试配置
+跳过错误继续执行、遇到错误后杀死进程、监视系统原生代码、等待调试器等。
+
+* --hprof
+* --ignore-crashes
+* --wait-dbg
+
+#### MonkeyRunner
+无需源代码控制安卓应用或模拟器的工具。
+可使用python脚本安装或测试应用。发送键盘指令、界面截图等。
+为了执行功能测试而设计。
+
+##### 特性
+* 多设备控制
+* 功能测试
+* 回归测试
+* 自动化扩展 -- python, plugin
+
+##### APIs
+###### MonkeyRunner
+工具类：提供设备连接、创建工具界面、提供内置帮助。
+[MonkeyRunner](https://developer.android.google.cn/studio/test/monkeyrunner/MonkeyRunner.html)
+
+###### MonkeyDevice
+代表设备或模拟器。安装卸载应用、打开应用、发送键盘或触摸事件。
+[MonkeyDevice](https://developer.android.google.cn/studio/test/monkeyrunner/MonkeyDevice.html)
+
+``` python
+device = MonkeyRunner.waitForConnection()
+```
+
+###### MonkeyImage
+代表屏幕截图。截图、位图转换、截图比较、写入文件。
+[MonkeyImage](https://developer.android.google.cn/studio/test/monkeyrunner/MonkeyImage.html)
+
+``` python
+image = MonkeyDevice.takeSnapshot()
+```
+
+##### 命令
+
+###### 生成API文档
+format: text, html
+
+``` bash
+monkeyrunner help.py <format> <outfile>
+```
+
+###### 指定Plugin
+Plugin不能访问Android框架API。plugin可出现多次。
+program_filename是python测试脚本。
+
+``` bash
+monkeyrunner -plugin <plugin_jar> <program_filename> <program_options>
+```
+
+### 优化
+#### Android Profiler
+android studio 3.0启用。替代Android Monitor工具。
+View &gt; Tool Windows &gt; Android Profiler
+启用后会持续收集性能分析数据，直到设备断开连接或点击关闭。
+共享时间线，查看CPU、内存、网络情况。
+
+##### 启用高级分析
+Android 8.0及以上版本默认开启。
+Android 7.1及以下版本需要通过注入监视逻辑代码到app中才能启用，Run &gt; Edit Configurations启用高级分析，重新构建并运行app。
+**注意**：
+native代码不可用。使用JNI应用中native代码分配的内存不能分析。
+
+##### CPU分析
+查看CPU的Activity和方法跟踪信息。
+点击CPU时间线的任意位置可打开CPU分析。
+
+###### 界面结构
+* Event时间线
+显示应用中在其生命周期不同状态间转换的Activity，并表明用户与设备的交互。
+
+* CPU时间线
+显示应用的实时CPU使用率（以占用总可用CPU时间百分比表示）及应用使用的总线程数。
+
+* 线程Activity时间线
+列出属于应用进程的每个线程，沿时间线用颜色块标识Activity。记录函数跟踪后，可选择一个线程在跟踪空格中查看其数据。
+**注意**：
+分析器会Android Studio和Android平台添加到应用的线程，如JDWP、Profile Saver、Studio:VMStats、Studio:Perfa 以及 Studio:Heartbeat，确切名称可能有所不同。
+分析器线程执行的是原生代码，无法记录分析器线程的函数跟踪数据。
+
+	* 绿色 -- 运行中或可运行
+	* 黄色 -- 等待中
+	* 灰色 -- 休眠中
+
+* 记录配置
+确定分析器记录函数跟踪的方式。
+Android 8.0(API 26)以下的版本对于记录文件大小有限制，默认为8M。
+
+	* Sampled
+采样间隔为1000μs即一毫秒，小于这个时间的执行函数，将不会被记录。
+
+	* Instrumented
+记录每个函数调用的开始和结束时记录时间戳。短时间内执行大量函数，分析器可能迅速超出记录文件大小限制，无法记录更多跟踪数据。
+
+	* Edit configurations
+自定义记录方式，记录文件大小、采样时间间隔等。
+
+
+* 记录按钮
+开始和停止记录函数跟踪。
+
+###### 函数跟踪日志
+* 使用CPU分析器记录函数跟踪日志
+使用记录按钮，开始和停止记录跟踪日志。
+日志查看有以下四种展示方式。
+函数的执行时间 = 自身代码执行时间 + 被调用方代码执行时间。
+
+	* 调用图与火焰图
+系统API调用为橙色，应用自有函数调用为绿色，第三方API调用为蓝色。
+调用图，调用方在上，火焰图与之相反。
+
+	* 自顶向下与自底向上
+以树状结构显示函数调用关系。
+自顶向下，父节点为调用方，子节点为被调用方。自底向上与之相反。
+
+* Debug类设置函数跟踪代码
+比如在Activity类onCreate开始跟踪，在onDestory中结束跟踪。
+``` java
+Debug.startMethodTracing("sample");
+// Debug.startMethodTracingSampling() 指定采样时间
+Debug.stopMethodTracing();
+```
+日志输出路径：/sdcard/Android/data/package.name/files/sample.trace
+
+####### 查看工具：
+* [Traceview](https://developer.android.google.cn/studio/profile/traceview.html)
+traceview的命令行模式已经过期了。
+打开方式：DDMS &gt; File &gt; Open File。
+已知问题：Android 5.1以前的版本不会记录分析过程中退出的线程、VM会利用线程ID，如果一个线程退出另一个线程开启，两者线程ID可能相同。
+
+* [dmtracedump](https://developer.android.google.cn/studio/command-line/dmtracedump.html)
+支持两种方式：HTML格式与图片格式。
+图片格式要先安装[GraphViz](https://www.graphviz.org/)，并将bin目录添加到环境变量中。
+
+``` bash
+dmtracedump -h dmtrace.trace > trace.html
+dmtracedump -g trace.png dmtrace.trace
+```
+
+##### Memory分析
+帮助识别导致应用卡顿、冻结甚至崩溃的内存泄漏和流失。显示一个应用内存使用量的实时图表。
+
+###### 计算内存
+与Android Monitor的统计方法有所差别。
+
+* Java -- Java/Kotlin代码分配的对象内存
+* Native -- C/C++代码分配的对象内存
+* Graphics -- 图形缓冲队列所使用的内存
+* Stack -- 应用中原生堆栈和Java堆栈使用的内存，与线程数量相关
+* Code -- 处理代码和资源的内存
+* other -- 不确定分类的内存
+* Allocated -- 应用分配的Java/Kotlin对象数
+
+###### 捕获堆转储
+查看任何给定时间内哪些对象正在使用内存。可查看已分配内存的对象类型、每个类型分配内存大小、每个对象正在使用内存大小、每个对象的引用、对象分配到的调用堆栈（仅限Android 7.1及以下版本）。
+堆转储不会显示每个已分配对象的堆栈跟踪。故要先记录内存分配，再启用堆转储。
+
+须注意的引起内存泄漏情况：
+* 长时间引用Activity、Context、View、Drawable和其他对象
+* 可持有Activity实例的非静态内部类，如Runnable
+* 对象保持时间超出所需时间的缓存
+
+堆转储仅能在内存分析器中查看，调用Export heap dump as HPROF file才能保存到文件中。Android的HProf文件与Java SE的HProf文件格式有所不同，需要使用SDK/platform-tools/hprof-conv进行转换。
+
+``` bash
+hprof-conv heap-original.hprof heap-converted.hprof
+```
+
+内存泄漏触发技巧
+* 不同Activity生命周期下反复执行设备纵横转向操作
+* 不同Activity生命周期下执行应用切换
+
+##### Network分析
+显示实时网络活动，包括发送和接收的数据以及当前的连接数。
+执行网络请求时，设备必须使用高功耗的移动或WLAN无线装置收发数据包。
+查找频繁出现的短时网络活动峰值。可使用批量处理网络请求，减少网络请求次数，改善电池续航表现。
+
+###### 界面结构
+* Event时间线及无线装置功耗状态
+* 网络流量折线图
+* 收发文件列表
+* 所选收发文件详情
+
+**注意**：
+仅支持HttpURLConnection和OkHttp网络连接库。
+
+#### build
+[Optimize Your Build Speed](https://developer.android.google.cn/studio/build/optimize-your-build.html#optimize)
+##### principles
+* Keep your tools up to date
+* Create a build variant for development
+* Avoid compiling unnecessary resources
+``` gradle
+resConfigs "en", "xxhdpi"
+```
+
+* Disable Crashlytics for your debug builds
+``` gradle
+android {
+  ...
+  buildTypes {
+    debug {
+      ext.enableCrashlytics = false
+//      ext.alwaysUpdateBuildId = false
+    }
+}
+```
+``` java
+Crashlytics crashlyticsKit = new Crashlytics.Builder()
+    .core(new CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build())
+    .build();
+Fabric.with(this, crashlyticsKit);
+```
+
+* Use static build config values with your debug build
+* Use static dependency versions
+``` gradle
+'com.android.tools.build:gradle:2.+ // error!
+```
+
+* Enable offline mode
+Settings &gt; Build, Execution, Deployment &gt; Gradle &gt; Offline work
+
+* Enable configuration on demand
+Settings &gt; Build, Execution, Deployment &gt; Compiler &gt; Configure on demand
+
+* Create library modules
+
+* Create tasks for custom build logic
+project-root/buildSrc/src/main/groovy/
+
+* Convert images to WebP
+
+* Disable PNG crunching
+``` gradle
+android {
+    buildTypes {
+        release {
+            // Disables PNG crunching for the release build type.
+            crunchPngs false
+        }
+    }
+}
+```
+
+* Enable Instant Run
+要求debug版本、Gradle Plugin 2.3.0、minSdkVersion 15、Device 5.0。
+Settings &gt; Build, Execution, Deployment &gt; Instant Run
+
+* Enable Build Cache
+Gradle Plugin 2.3.0及以上默认开启。
+在gradle.properties中可关闭。
+```
+android.enableBuildCache=false
+android.buildCacheDir=<path-to-directory>
+```
+如果进行了如下配置，buildCache功能将自动被Android Studio禁用。
+
+	* minSdkVersion 21以下版本启用了multiDexEnabled功能
+	* 开启了混淆功能minifyEnabled
+	* 关闭了预先Dex库功能preDexLibraries
+
+* Disable annotation processors
+
+##### test
+``` bash
+$ gradlew clean
+$ gradlew --profile --recompile-scripts --offline --rerun-tasks assembleFlavorDebug
+```
+
+#### Profile or Debug Apk
+要求Android Studio 3.0及以上。
+File &gt; Profile or Debug Apk
+
+##### 附加Java源代码
+1. 双击.smali文件
+2. 点击Attach Java Sources
+3. 找到源代码目录，点击Open
+
+##### 附加原生调试符号
+1. 点击cpp目录下不包含调试符号的原生库文件
+2. 点击编辑器窗口右上角的Add
+3. 找到可调试原生库的目录，点击OK
+4. 如果apk与可调试原生库用不同的工作站构建，使用编辑窗口的Path Mappings部分中的Local Paths，添加缺失调试符号的本地路径。
+5. 点击Apply
+
+**注意**:
+apk和可调试的.so文件必须使用相同的工作站或构建服务器构建。
