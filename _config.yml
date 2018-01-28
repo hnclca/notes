@@ -82,6 +82,8 @@ deploy:
   type: git
   repo: https://github.com/hnclca/hnclca.github.io.git
   branch: master
+  name: hnclca
+  email: hnclca@qq.com
 
 # list
 # hexo-generator-json-content
