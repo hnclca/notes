@@ -19,3 +19,13 @@
 <% if (theme.mathjax){ %>
 <%- partial('mathjax') %>
 <% } %>
+
+<% if (theme.chart){ %>
+<%- js('./js/raphael.min') %>
+<%- js('./js/jquery.min') %>
+<%- js('./js/flowchart.min') %>
+<%- js('./js/underscore-min') %>
+<%- js('./js/sequence-diagram-min') %>
+<%- js('./js/snap.svg-min') %>
+<%- partial('chart') %>
+<% } %>

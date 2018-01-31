@@ -10,7 +10,7 @@ tags:
 
 [TOC]
 
-[android studio](https://developer.android.google.cn/studio/intro/index.html)介绍。
+[android studio](https://developer.android.google.cn/studio/intro/index.html)简介
 
 <!-- more -->
 
@@ -991,6 +991,93 @@ apply from: ‘http://company/1.0/projectStructure.gradle’
 ##### 任务、任务类型、动态任务
 编写代码，定义任务、任务类型或动态任务，减少重复代码。
 
+#### 加速构建
+[Optimize Your Build Speed](https://developer.android.google.cn/studio/build/optimize-your-build.html#optimize)
+##### 原则
+* Keep your tools up to date
+* Create a build variant for development
+* Avoid compiling unnecessary resources
+``` gradle
+resConfigs "en", "xxhdpi"
+```
+
+* Disable Crashlytics for your debug builds
+``` gradle
+android {
+  ...
+  buildTypes {
+    debug {
+      ext.enableCrashlytics = false
+//      ext.alwaysUpdateBuildId = false
+    }
+}
+```
+``` java
+Crashlytics crashlyticsKit = new Crashlytics.Builder()
+    .core(new CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build())
+    .build();
+Fabric.with(this, crashlyticsKit);
+```
+
+* Use static build config values with your debug build
+* Use static dependency versions
+``` gradle
+'com.android.tools.build:gradle:2.+ // error!
+```
+
+* Enable offline mode
+Settings &gt; Build, Execution, Deployment &gt; Gradle &gt; Offline work
+
+* Enable configuration on demand
+Settings &gt; Build, Execution, Deployment &gt; Compiler &gt; Configure on demand
+
+* Create library modules
+
+* Create tasks for custom build logic
+project-root/buildSrc/src/main/groovy/
+
+* Convert images to WebP
+
+* Disable PNG crunching
+``` gradle
+android {
+    buildTypes {
+        release {
+            // Disables PNG crunching for the release build type.
+            crunchPngs false
+        }
+    }
+}
+```
+
+* Enable Instant Run
+要求debug版本、Gradle Plugin 2.3.0、minSdkVersion 15、Device 5.0。
+Settings &gt; Build, Execution, Deployment &gt; Instant Run
+
+* Enable Build Cache
+Gradle Plugin 2.3.0及以上默认开启。
+在gradle.properties中可关闭。
+```
+android.enableBuildCache=false
+android.buildCacheDir=<path-to-directory>
+```
+如果进行了如下配置，buildCache功能将自动被Android Studio禁用。
+
+	* minSdkVersion 21以下版本启用了multiDexEnabled功能
+	* 开启了混淆功能minifyEnabled
+	* 关闭了预先Dex库功能preDexLibraries
+
+* Disable annotation processors
+
+##### 分析构建过程
+分析报告输出目录： project-root/build/reports/profile/
+报告格式为html。
+
+``` bash
+$ gradlew clean
+$ gradlew --profile --recompile-scripts --offline --rerun-tasks assembleFlavorDebug
+```
+
 #### gradle应用
 ##### 设置应用ID
 为不同的构建类型或产品类型创建不同的应用ID。清单中可用${applicationId}占位符。
@@ -1654,7 +1741,7 @@ program_filename是python测试脚本。
 monkeyrunner -plugin <plugin_jar> <program_filename> <program_options>
 ```
 
-### 优化
+### 分析
 #### Android Profiler
 android studio 3.0启用。替代Android Monitor工具。
 View &gt; Tool Windows &gt; Android Profiler
@@ -1790,90 +1877,6 @@ hprof-conv heap-original.hprof heap-converted.hprof
 **注意**：
 仅支持HttpURLConnection和OkHttp网络连接库。
 
-#### build
-[Optimize Your Build Speed](https://developer.android.google.cn/studio/build/optimize-your-build.html#optimize)
-##### principles
-* Keep your tools up to date
-* Create a build variant for development
-* Avoid compiling unnecessary resources
-``` gradle
-resConfigs "en", "xxhdpi"
-```
-
-* Disable Crashlytics for your debug builds
-``` gradle
-android {
-  ...
-  buildTypes {
-    debug {
-      ext.enableCrashlytics = false
-//      ext.alwaysUpdateBuildId = false
-    }
-}
-```
-``` java
-Crashlytics crashlyticsKit = new Crashlytics.Builder()
-    .core(new CrashlyticsCore.Builder().disabled(BuildConfig.DEBUG).build())
-    .build();
-Fabric.with(this, crashlyticsKit);
-```
-
-* Use static build config values with your debug build
-* Use static dependency versions
-``` gradle
-'com.android.tools.build:gradle:2.+ // error!
-```
-
-* Enable offline mode
-Settings &gt; Build, Execution, Deployment &gt; Gradle &gt; Offline work
-
-* Enable configuration on demand
-Settings &gt; Build, Execution, Deployment &gt; Compiler &gt; Configure on demand
-
-* Create library modules
-
-* Create tasks for custom build logic
-project-root/buildSrc/src/main/groovy/
-
-* Convert images to WebP
-
-* Disable PNG crunching
-``` gradle
-android {
-    buildTypes {
-        release {
-            // Disables PNG crunching for the release build type.
-            crunchPngs false
-        }
-    }
-}
-```
-
-* Enable Instant Run
-要求debug版本、Gradle Plugin 2.3.0、minSdkVersion 15、Device 5.0。
-Settings &gt; Build, Execution, Deployment &gt; Instant Run
-
-* Enable Build Cache
-Gradle Plugin 2.3.0及以上默认开启。
-在gradle.properties中可关闭。
-```
-android.enableBuildCache=false
-android.buildCacheDir=<path-to-directory>
-```
-如果进行了如下配置，buildCache功能将自动被Android Studio禁用。
-
-	* minSdkVersion 21以下版本启用了multiDexEnabled功能
-	* 开启了混淆功能minifyEnabled
-	* 关闭了预先Dex库功能preDexLibraries
-
-* Disable annotation processors
-
-##### test
-``` bash
-$ gradlew clean
-$ gradlew --profile --recompile-scripts --offline --rerun-tasks assembleFlavorDebug
-```
-
 #### Profile or Debug Apk
 要求Android Studio 3.0及以上。
 File &gt; Profile or Debug Apk
@@ -1892,3 +1895,35 @@ File &gt; Profile or Debug Apk
 
 **注意**:
 apk和可调试的.so文件必须使用相同的工作站或构建服务器构建。
+
+#### Battery Historian
+##### 获取报告
+如果是Android 7.0及以上系统，报告后缀为zip。
+``` bash
+$ adb kill-server
+$ adb devices
+$ adb shell dumpsys batterystats --reset
+// 断开连接线，仅使用手机电池打开运行应用
+$ adb devices
+$ adb shell dumpsys batterystats > path/batterstats.txt
+$ adb bugreport > path/bugreport.txt // 7.0及以上为zip后缀
+```
+
+##### 安装
+###### docker
+[Dcoker CE](https://www.docker.com/community-edition)
+安装完成后执行如下命令测试：
+``` bash
+$ docker run hello-world
+```
+
+###### Battery Historian
+由于gcr.io无法访问，这里通过[Docker Store](https://store.docker.com/)获取Battery Historian镜像。
+``` bash
+$ docker pull bhaavan/battery-historian
+$ docker run -p 8888:9999 bhaavan/battery-historian
+```
+
+##### 运行
+浏览器访问http://localhost:8888/。
+这里8888是自行指定的本机运行端口。

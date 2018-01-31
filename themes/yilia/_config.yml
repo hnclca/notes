@@ -125,3 +125,6 @@ friends:
   友情链接6: http://localhost:4000/
 
 aboutme: 游戏里都迷路的家伙
+
+# Support sequence & flow chart
+chart: true

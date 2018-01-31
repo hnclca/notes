@@ -8,7 +8,6 @@ tags:
 	- android
 ---
 
-[TOC]
 数据绑定库用于编写声明式布局，减少必要的实现布局与程序逻辑绑定的胶水代码。
 数据绑定库是支持库，支持Android 2.1（API 7）及以上平台。
 最低要求Android Gradle Plugin 1.5.0-alpha1。
