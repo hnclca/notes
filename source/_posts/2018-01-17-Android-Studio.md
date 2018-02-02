@@ -8,9 +8,7 @@ tags:
 	- IDE
 ---
 
-[TOC]
-
-[android studio](https://developer.android.google.cn/studio/intro/index.html)简介
+[android studio](https://developer.android.google.cn/studio/intro/index.html)功能简介
 
 <!-- more -->
 
@@ -217,11 +215,6 @@ public还是private
 布局别名，使用merge &gt; include元素引用别名文件。
 **注意**：
 并非所有资源都可使用别名，特别是xml目录中的动画、菜单、原始资源及其他未指定资源。
-
-#### 实时模板
-
-#### Lint
-代码扫描。
 
 #### 矢量资源库
 Vector Asset Studio支持将SVG、PSD的矢量资源转换为XML格式，取代光栅格式。
@@ -1927,3 +1920,26 @@ $ docker run -p 8888:9999 bhaavan/battery-historian
 ##### 运行
 浏览器访问http://localhost:8888/。
 这里8888是自行指定的本机运行端口。
+
+#### OpenGL ES Tracer
+ES: Embedded System
+能捕获OpenGL ES命令和逐帧图像。
+
+##### 开启
+
+1. Tools &gt; Android &gt; Android Device Monitor
+2. Window &gt; Open Perspective &gt; Tracer for OpenGL ES
+
+##### 收集数据
+要求Android 4.1(API 16)及以上设备。
+
+1. 连接设备，开启调试模式
+2. 点击右上角，类似V的图标，进行追踪配置，开始追踪
+3. 与要追踪的应用交互
+4. 点击对话框的停止追踪按钮
+
+##### 导入数据
+点击右上角，类似C的图标，载入格式为*.gltrace的追踪数据。
+
+#### Hierarchy Viewer
+跳过：因为该工具已停止开发。替代工具Layout Inspector目前并未提供布局性能分析信息。
