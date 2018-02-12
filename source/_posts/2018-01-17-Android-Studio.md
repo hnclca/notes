@@ -175,6 +175,189 @@ build.gradle
 
 ##### C/C++(2.2)
 需要下载NDK工具包、CMake（构建工具）、LLDB（调试器）。
+源代码目录cpp，头文件后缀名.h，实现文件名.c。
+ndk-build使用Android.mk构建脚本。
+CMake使用CMakeLists.txt构建脚本。
+
+###### CMakeLists.txt
+
+* 指定构建工具最低版本
+```
+cmake_minimum_required(VERSION 3.4.1)
+```
+
+* 指定构建的原生库名、类型、源文件路径
+类型有SHARED和STATIC（静态库）
+```
+add_library( # Specifies the name of the library.
+             native-lib
+
+             # Sets the library as a shared library.
+             SHARED
+
+             # Provides a relative path to your source file(s).
+             src/main/cpp/native-lib.cpp )
+```
+
+* 指定头文件位置
+```
+# Specifies a path to native header files.
+include_directories(src/main/cpp/include/)
+```
+
+* 添加预构建库
+由于库预先构建，使用IMPORTED标识通知导入。
+```
+add_library( imported-lib
+             SHARED
+             IMPORTED )
+```
+
+* 指定预构建二进制库位置
+```
+set_target_properties( # Specifies the target library.
+                       imported-lib
+
+                       # Specifies the parameter you want to define.
+                       PROPERTIES IMPORTED_LOCATION
+
+                       # Provides the path to the library you want to import.
+                       imported-lib/src/${ANDROID_ABI}/libimported-lib.so )
+```
+
+* 指定预构建库头文件路径
+```
+target_include_directories(hello-libs PRIVATE
+	${distribution_DIR}/gmath/include
+    ${distribution_DIR}/gperf/include)
+```
+
+* 指定添加的NDK API库
+```
+find_library( # Defines the name of the path variable that stores the
+              # location of the NDK library.
+              log-lib
+
+              # Specifies the name of the NDK library that
+              # CMake needs to locate.
+              log )
+```
+
+* 指定库之间的关联关系
+```
+# Links your native library against one or more other native libraries.
+target_link_libraries( # Specifies the target library.
+                       native-lib
+
+                       # Links the log library to the target library.
+                       ${log-lib} )
+```
+
+* 启用汇编语言
+```
+enable_language(ASM_NASM)
+```
+
+复杂点的构建脚本
+```
+file(GLOB_RECURSE SRC_FILES FOLLOW_SYMLINKS
+    ../../../native/PushUpPal/src/*.cpp
+    ../../../native/PushUpPal/glue-code/jni/*.cpp
+    ../../../deps/djinni/support-lib/*.cpp)
+
+include_directories(native/PushUpPal/src
+                    native/PushUpPal/glue-code/interfaces/generated
+                    native/PushUpPal/glue-code/jni
+                    deps/djinni/support-lib
+                    deps/djinni/support-lib/jni
+                    deps/OpenCV-android-sdk/sdk/native/jni/include)
+
+add_library(native-pushuppal SHARED ${SRC_FILES})
+
+add_library(lib-opencv SHARED IMPORTED)
+set_target_properties(lib-opencv PROPERTIES IMPORTED_LOCATION
+                      ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI}/
+                          libopencv_java3.so)
+
+target_link_libraries(native-pushuppal
+                      lib-opencv)
+```
+
+###### Gradle配置
+[CMake 参数](https://developer.android.google.cn/ndk/guides/cmake.html#variables)
+
+* 指定构建脚本
+``` gradle
+android {
+  ...
+  // Encapsulates your external native build configurations.
+  externalNativeBuild {
+
+    // Encapsulates your CMake build configurations.
+    cmake {
+
+      // Provides a relative path to your CMake build script.
+      path "CMakeLists.txt"
+    }
+  }
+}
+```
+
+* 指定可选参数和标志
+``` gradle
+android {
+  ...
+  defaultConfig {
+    ...
+    // This block is different from the one you use to link Gradle
+    // to your CMake or ndk-build script.
+    externalNativeBuild {
+
+      // For ndk-build, instead use ndkBuild {}
+      cmake {
+
+        // Passes optional arguments to CMake.
+        arguments "-DANDROID_ARM_NEON=TRUE", "-DANDROID_TOOLCHAIN=clang"
+
+        // Sets optional flags for the C compiler.
+        cFlags "-D_EXAMPLE_C_FLAG1", "-D_EXAMPLE_C_FLAG2"
+
+        // Sets a flag to enable format macro constants for the C++ compiler.
+        cppFlags "-D__STDC_FORMAT_MACROS"
+      }
+    }
+  }
+
+  buildTypes {...}
+
+  productFlavors {
+    ...
+    demo {
+      ...
+      externalNativeBuild {
+        cmake {
+          ...
+          // Specifies which native libraries to build and package for this
+          // product flavor. If you don't configure this property, Gradle
+          // builds and packages all shared object libraries that you define
+          // in your CMake or ndk-build project.
+          targets "native-lib-demo"
+        }
+      }
+    }
+
+    paid {
+      ...
+      externalNativeBuild {
+        cmake {
+          ...
+          targets "native-lib-paid"
+        }
+      }
+    }
+  }
+}
+```
 
 ### 编码
 #### 文件模板
@@ -989,6 +1172,39 @@ apply from: ‘http://company/1.0/projectStructure.gradle’
 ##### 原则
 * Keep your tools up to date
 * Create a build variant for development
+``` gradle
+	flavorDimensions "api", "mode"
+
+    productFlavors {
+        dev {
+        	dimension "api"
+            minSdkVersion 21
+        }
+        prod {
+        	dimension "api"
+            minSdkVersion 14
+        }
+        demo {
+          dimension "mode"
+          ...
+        }
+
+        full {
+          dimension "mode"
+          ...
+        }
+    }
+	// 过滤变体，如dev的release版本
+    variantFilter { variant ->
+    def names = variant.flavors*.name
+    // To check for a build type instead, use variant.buildType.name == "buildType"
+    if (names.contains("minApi21") && names.contains("demo")) {
+      // Gradle ignores any variants that satisfy the conditions above.
+      setIgnore(true)
+    }
+  }
+```
+
 * Avoid compiling unnecessary resources
 ``` gradle
 resConfigs "en", "xxhdpi"
@@ -1114,6 +1330,18 @@ keyAlias keystoreProperties['keyAlias']
 keyPassword keystoreProperties['keyPassword']
 storeFile file(keystoreProperties['storeFile'])
 storePassword keystoreProperties['storePassword']
+```
+
+##### 增加新构建类型
+仅有build/release两种构建类型，必须用matchingFallbacks指定依赖构建类型，同时要signingConfig指定签名文件，否则gradle任务中无此构建类型。
+``` gradle
+loggable {
+    applicationIdSuffix ".loggable"
+
+    matchingFallbacks = ['release']
+    buildConfigField("boolean", "LOG_DEBUG", "true")
+    signingConfig signingConfigs.release
+}
 ```
 
 ##### 多版本apk构建
