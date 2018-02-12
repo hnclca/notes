@@ -233,7 +233,8 @@ Error:Execution failed for task ':app:transformDexArchiveWithExternalLibsDexMerg
 com.linkedin.dexmaker:dexmaker-mockito:$versions.dexmaker
 
 ### Dex: Error converting bytecode to dex
-**问题现场**：```
+**问题现场**：
+```
 Dex: Error converting bytecode to dex:
 Cause: signature-polymorphic method called without --min-sdk-version >= 26
 ```
@@ -241,3 +242,21 @@ Cause: signature-polymorphic method called without --min-sdk-version >= 26
 **问题原因**:
 desugar(android studio 3.0)不支持MethodHandle.invoke和MethodHandle.invokeExact方法。
 
+### Failure [INSTALL_PARSE_FAILED_NO_CERTIFICATES]
+**问题原因**:
+证书文件存在问题，或不支持APK Signature Scheme v2（Android 7.0）签名方案。
+
+**解决方案**:
+替换证书文件或禁用APK Signature Scheme v2签名方案。
+
+### Write access is allowed from event dispatch thread only
+**问题现场**：
+```
+Error:Failed to complete Gradle execution.
+
+Cause:
+Write access is allowed from event dispatch thread only
+```
+
+**问题原因**:
+JDK位置有误。更新kotlin plugin重启后，修复plugin错误重启时产生。

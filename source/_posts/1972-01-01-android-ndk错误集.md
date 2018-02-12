@@ -43,3 +43,29 @@ Gradle配置编译打包时过滤掉所有64位jniLib文件夹。
 存在armbi-v7文件夹，缺失对应的so文件
 **解决方案**：
 仅有armbi平台的so库，放入armbi-v7的库之后解决；
+
+### Error:(41) undefined reference to `__android_log_print'
+**问题原因**：
+编译的原生库未链接到android库
+**解决方案**：
+仅有armbi平台的so库，放入armbi-v7的库之后解决；
+
+### java.lang.NoSuchMethodError: No static method
+**问题原因**：
+kotlin类似Java静态方法的Companion方法实际是非静态方法。
+**解决方案**：
+使用GetMethodID而不是GetStaticMethodID。
+
+### JNI DETECTED ERROR IN APPLICATION: JNI CallVoidMethodV called with pending exception '
+**问题原因**：
+在后台线程调用了需要在前台线程运行的方法。如LiveData.setValue。
+**解决方案**：
+移除LiveData.setValue方法。
+
+### undefined reference to `ASensorManager_getDefaultSensor
+**问题原因**：
+未导入链接库android
+
+### CMake Error: CMake can not determine linker language for target: native-activity
+**问题原因**：
+找不到源文件时产生。
