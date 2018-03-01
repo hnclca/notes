@@ -1,6 +1,6 @@
 ---
 title: Architecture Components
-comments: false
+comments: true
 toc: true
 date: 2017-12-18 15:57:48
 tags:

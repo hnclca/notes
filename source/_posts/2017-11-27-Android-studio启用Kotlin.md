@@ -1,6 +1,6 @@
 ---
 title: Android studio启用Kotlin
-comments: false
+comments: true
 toc: true
 date: 2017-11-27 17:24:39
 tags:

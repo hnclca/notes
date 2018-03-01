@@ -1,6 +1,6 @@
 ---
 title: JMeter之二次开发TCPClient
-comments: false
+comments: true
 toc: true
 date: 2017-05-15 17:32:32
 tags:

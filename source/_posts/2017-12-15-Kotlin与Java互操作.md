@@ -1,6 +1,6 @@
 ---
 title: Kotlin与Java互操作
-comments: false
+comments: true
 toc: true
 date: 2017-12-15 11:09:14
 tags:

@@ -1,6 +1,6 @@
 ---
 title: Data Binding
-comments: false
+comments: true
 toc: true
 date: 2018-01-02 14:24:14
 tags:

@@ -1,6 +1,6 @@
 ---
 title: MySQL install on Ubuntu
-comments: false
+comments: true
 toc: true
 date: 2017-07-13 17:21:05
 tags:

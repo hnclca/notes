@@ -1,6 +1,6 @@
 ---
+comments: true
 title: kotlin-android错误集
-comments: false
 toc: true
 date: 1972-01-01 08:00:00
 tags:

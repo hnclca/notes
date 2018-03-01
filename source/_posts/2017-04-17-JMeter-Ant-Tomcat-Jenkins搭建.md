@@ -1,6 +1,6 @@
 ---
 title: JMeter+Ant+Tomcat+Jenkins搭建
-comments: false
+comments: true
 toc: true
 date: 2017-04-17 17:32:48
 tags:

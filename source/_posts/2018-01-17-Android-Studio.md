@@ -1,6 +1,6 @@
 ---
 title: Android Studio
-comments: false
+comments: true
 toc: true
 date: 2018-01-17 16:15:40
 tags:

@@ -80,7 +80,7 @@ theme: yilia
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repo: https://github.com/hnclca/hnclca.github.io.git
+  repo: git@github.com:hnclca/hnclca.github.io.git
   branch: master
   name: hnclca
   email: hnclca@qq.com

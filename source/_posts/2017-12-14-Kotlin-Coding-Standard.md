@@ -1,6 +1,6 @@
 ---
 title: Kotlin Coding Standard
-comments: false
+comments: true
 toc: true
 date: 2017-12-14 13:39:20
 tags:

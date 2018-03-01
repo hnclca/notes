@@ -3,7 +3,7 @@ title: {{ title }}
 date: 1972-01-01 08:00:00
 tags:
 	- errors
-comments: false
+comments: true
 toc: true
 ---
 
