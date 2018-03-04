@@ -806,11 +806,121 @@ webView.loadUrl("file:///android_assets/index.html")
 
 * RelativeLayout
 	* child view
-		* @android:layout_alignParentTop/..
-		* @android:layout_toEndOf/...
-		* @android:layout_alignBaseLine
-		
+		* @android:layout_centerInParent/.. -- 相对父视图
+		* @android:layout_toEndOf/... -- 相对锚点视图
+		* @android:layout_alignWithParentIfMissing -- 锚点不可见
 
+##### 动态布局
+###### Adapter
+将数据转换为视图。
+
+* ArrayAdapter -- 数组数据
+* SimpleCursorAdapter -- 数据库数据
+* CustomAdapter -- 继承BaseAdapter
+	* getCount
+	* getItem
+	* getItemId -- 返回指定位置的行ID，如果没有，默认返回位置
+	* getView
+
+数据变动更新
+
+* notifyDataSetChanged -- 通知更新
+* setNotifyOnChange
+
+###### AdapterView
+持有Adapter实例。
+
+* ListView
+* GridView
+	* @android:stretchMode
+	* @android:numColumns
+	* @android:columnWidth
+	* @android:horizontalSpacing/..
+	* @android:gravity
+* Spinner
+	* @android:spinnerMode
+	* @android:dropDownHorizontalOffset/..
+	* @android:gravity
+	* @android:dropDownSelector(dropdown)
+	* @android:dropDownWidth(dropdown)
+	* @android:popupBackground(dropdown)
+	* @android:prompt(dialog)
+
+项目选择事件
+
+* setOnItemSelectedListener
+
+#### 视图
+
+##### 输出
+* TextView
+* ImageView
+* ProgressBar
+* Space
+
+##### 输入
+* EditText
+* Button
+* ImageButton
+* ToggleButton
+* Switch
+* CheckBox
+	* isChecked
+	* OnCheckedChangeListener
+* RadioButton/RadioGroup
+	* OnCheckedChangeListener
+
+#### Fragment
+UI模块化和复用性。
+
+##### 基类
+android.app.Fragment
+
+##### 生命周期
+
+* onAttach -- 绑定activity
+* onCreate -- 首次创建，activity可能未完全创建
+* onCreateView -- 实例化并返回UI实例
+* onActivityCreated -- activity实例化且视图层次实例化
+* onStart -- 可见
+* onResume -- 可见可交互
+* onPause -- 不可见
+* onDestroyView -- 视图解绑
+* onDestroy
+* onDetach -- activity解绑
+
+##### 添加到activity
+
+###### 布局添加
+* fragment
+	* @android:name
+###### 代码添加
+* FrameLayout
+	* @android:id="@+id/fragment_container"
+
+* Fragment
+	* set/getArguments
+	* getActivity
+
+* FragmentManager
+	* beginTransaction
+	* findFragmentById
+
+* FragmentTransaction
+	* add
+	* replace
+	* commit
+	* addBackStack
+	* popBackStack
+
+
+
+``` java
+fragmentManager = getFragmentManager()
+fragmentTransaction = fragmentManager.beginTransaction()
+fragmentTransaction.add(R.id.fragment_container, fragment)
+fragmentTransaction.commit()
+```
 
 ### User Interface
 
