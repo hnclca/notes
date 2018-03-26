@@ -7,8 +7,7 @@ tags:
 	- android
 	- quick reference
 ---
-
-[TOC]
+安卓平台的简单介绍。
 
 <!-- more -->
 ### 平台
@@ -248,7 +247,7 @@ class MyService : IntentService(MyService::class.java.simpleName) {
 ##### 绑定服务
 调用方与服务需要在服务生命周期内通信，服务与调用方生死相关。
 Service的exported属性决定返回的服务类型。
-Service中的onBind方法要根据服务类型返回合适的Binder服务频道。
+Service中的onBind方法要根据服务类型返回合适的Binder服务通道。
 
 ``` kotlin
 // Activity
@@ -292,7 +291,7 @@ override fun onServiceConnected(cmpName: ComponentName, iBinder: IBinder) {
 
 1. AIDL
 AIDL文件后缀名为.aidl，位于src/main/aidl/packagename/目录下。
-编译过程中，AIDL接口自动生成实现类供调用方和服务方通过binder频道通信。
+编译过程中，AIDL接口自动生成实现类供调用方和服务方通过binder通信通道。
 ``` kotlin
 // AIDL
 interface IMyServiceInterface {
@@ -923,9 +922,565 @@ fragmentTransaction.commit()
 ```
 
 ### User Interface
+#### ActionBar
+
+``` java
+// add
+actionBar  = getActionBar();
+
+// remove
+actionBar.hide();
+```
+
+##### 菜单
+
+* menu
+	* item
+		* @android:id
+		* @android:title
+		* @android:icon
+		* @android:showAsAction
+			* = ifRoom(recommand
+			* = never
+			* = withText
+			* = always
+			* = collapseActionView
+		* @android:onClick
+
+``` java
+getMenuInflater().inflate(R.menu_actions, menu);
+// selection
+boolean consumed = true;
+switch (item.getItemId()) {
+	...
+    default:
+    	consumed = super.onOptionsItemSelected(item);
+}
+return consumed;
+```
+
+##### 动作视图
+提供快速访问的视图，直接出现在动作栏而不只是动作图标。如SearchView。
+
+* menu
+	* item
+		* @android:actionViewClass
+		* @android:showAsAction
+			* = collapseActionView
+
+``` java
+getMenuInflater().inflate(R.menu_actions, menu);
+searchMenuItem = menu.findItem(R.id.action_search);
+searchView = (SearchView)searchMenuItem.getActionView();
+```
+
+##### 动作提供者
+使用自定义布局替换动作按钮，管理动作行为。如ShareActionProvider。
+
+* menu
+	* item
+		* @android:actionProviderClass
+
+
+``` java
+getMenuInflater().inflate(R.menu_actions, menu);
+menuItem = menu.findItem(R.id.action_share);
+shareActionProvider = (ShareActionProvider)menuItem.getActionProvider();
+intent = new Intent(Intent.ACTION_SEND);
+intent.setType("image/*");
+shareActionProvider.setShareIntent(intent);
+```
+
+#### Toast
+仅用于前台消息，后台消息请使用通知。
+
+* android.widget.Toast
+	* makeText()
+	* show()
+	* LENGTH_SHORT
+	* LENGTH_LONG
+
+#### 对话框
+
+##### 基类
+* android.app.Dialog
+
+##### 对话框分类
+
+* android.app.AlertDialog.Builder
+	* setTitle()
+	* setMessage()
+	* create()
+	* setPositiveButton()
+	* setNegativeButton()
+	* setNeutralButton()
+	* setItems()
+	* setMultiChoiceItems()
+	* setSingleChoiceItems()
+	* setView()
+
+* android.app.DatePickerDialog
+* android.app.TimePickerDialog
+* android.app.ProgressDialog
+	* setProgressStyle()
+	* setTitle()
+	* setMessage()
+	* setMax()
+	* incrementProgressBy()
+* android.app.DialogFragment -- dialog.show方法不处理生命周期事件
+	* show() -- 结合FragmentManager进行管理。
+
+#### 通知
+后台消息工具，出现在通知栏。
+
+``` java
+notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+notification = new Notification.Builder(this)
+		.setContentTitle()
+        .setContentText()
+        .setSmallIcon()
+        .setContentIntent(pendingIntent)
+        .build()
+notificationManager.notify(1, notification);
+```
+
+##### 后退栈
+由于通知允许用户点击通知访问深层activity，这会导致深层activity启动时无后退栈。如消息通知，点击后直接打开消息详情，后退时不会返回到消息列表。
+
+* TaskStackBuilder
+``` java
+intent = new Intent(this, ToastActivity.class);
+taskStackBuilder = TaskStackBuilder.create(this);
+taskStackBuilder.addParentStack(MessageActivity.class);
+taskStackBuilder.addNextIntent(intent);
+pendingIntent = taskStackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+```
+
+* AndroidManifest.xml
+``` xml
+<activity android:name=".InboxActivity" />
+<activity android:name=".MessageActivity"
+	android:parentActivityName=".InboxActivity" />
+```
+
+##### 动作按钮
+
+* android.app.NotificationBuilder
+	* addAction()
+
+##### 更新
+拥有唯一通知标识符。
+
+* android.app.Notification.InboxStyle
+	* addLine()
+	* setSummaryText()
+* android.app.Notification.Builder
+	* setStyle()
+
+##### 取消
+
+* android.app.NotificationManager
+	* cancel()
+	* cancelAll()
 
 ### Storing Data
+#### 简单文件
+##### 内存
+私有数据，应用卸载时移除。
+
+* android.content.Context
+	* openFileOutput
+	* openFileInput
+	* getCacheDir
+
+##### 外存
+
+###### 权限
+
+* android.permission.WRITE_EXTERNAL_STORAGE
+* android.permission.READ_EXTERNAL_STORAGE
+
+###### 检查外存是否可用
+外存是可移除的，访问外存关需要检查有效性。
+
+* android.os.Environment
+	* getExternalStorageState()
+	* MEDIA_UNKOWN -- 未知存储状态
+	* MEDIA_REMOVED -- 拔出
+	* MEDIA_UNMOUNTED -- 未安装
+	* MEDIA_CHECKING -- 检查运行中
+	* MEDIA_NOFS -- 文件系统未知
+	* MEDIA_MOUNTED
+	* MEDIA_READ_ONLY -- 以只读模式加载
+	* MEDIA_SHARED -- 通过USB添加到电脑
+	* MEDIA_BAD_REMOVAL -- 错误移除，需要检查
+	* MEDIA_UNMOUNTABLE -- 媒体错误
+
+###### 访问外存
+
+* android.os.Environment
+	* getExternalStorageDirectory() -- 不推荐使用顶层目录
+	* getExternalStoragePublicDirectory() -- 不推荐使用顶层目录
+	* DIRECTORY_ALARMS
+	* DIRECTORY_DCIM
+	* DIRECTORY_DOCUMENTS
+	* DIRECTORY_DOWNLOADS
+	* DIRECTORY_MOVES
+	* DIRECTORY_MUSIC
+	* DIRECTORY_NOTIFICATIONS
+	* DIRECTORY_PICTURES
+	* DIRECTORY_PODCASTS
+	* DIRECTORY_RINGTONES
+* android.content.Context
+	* getExternalFilesDir() -- 传入null时返回顶层目录
+	* getExternalCacheDir()
+
+##### JSON
+Javascript Object Notation。
+
+* android.util.JsonWriter
+	* setIndent()
+	* beginObject()
+	* name()
+	* value()
+	* endObject()
+	* close()
+* android.util.JsonReader
+	* beginObject()
+	* hasNext()
+	* nextName()
+	* nextString()
+	* skipValue()
+	* endObject()
+	* close()
+
+#### 共享配置
+##### 访问
+###### Activity共享
+* android.app.Activity.getPreferences()
+
+###### 上下文默认共享
+* android.preference.PreferenceManager
+	* getDefaultSharedPreferences()
+
+###### 通用共享
+* android.content.Context
+	* getSharedPreferences()
+
+#### 编辑、获取和监听
+* android.content.SharedPreferences
+	* edit()
+	* (un)registerOnSharedPreferenceChangeListener()
+* SharedPreferences.Editor
+	* put/getString()
+	* put/getBoolean()
+	* commit()
+* SharedPreferences.OnSharedPreferenceChangeListener
+
+##### 配置界面
+
+* android.preference.PreferenceFragment
+	* addPreferencesFromResource()
+* PreferenceScreen
+	* PreferenceCategory
+		* @android:title
+		* EditTextPreference/...
+			* @android:key
+			* @android:title
+			* @android:summary
+
+#### 关系数据库
+* android.database.sqlite.SQLiteOpenHelper
+	* onCreate()
+	* onUpgrade()
+	* onDowngrade() -- 默认抛出异常
+	* getWritableDatabase()
+	* getReadableDatabase()
+* android.database.sqlite.SQLiteDatabase
+	* execSQL()
+	* insert/update/query/delete()
+* android.content.ContentValues
+	* put()
+* android.database.Cursor
+	* moveToFirst()
+	* getString()
+	* moveToNext()
+
+#### 安卓备份服务
+备份用户下载应用和系统配置列表到云端。升级到新安卓设备时，能无缝地恢复应用和系统配置。
+
+##### 注册
+注册地址：[Register for Android Backup Service](https://developer.android.google.cn/google/backup/signup.html)
+
+##### 清单配置
+* manifest.application
+	* @android:backupAgent
+	* meta-data
+		* @android:name="com.google.android.backup.api_key"
+		* @android:value="AED2xe..."
+
+
+##### 备份
+不会自动备份和恢复应用数据目录。需要应用提供备份代理实现处理平台专用备份和恢复操作。
+备份的文件要注意同步，因为应用和备份服务会同时操作文件。
+
+* android.app.backup.BackupAgent
+* android.app.backup.BackupAgentHelper
+	* addHelper()
+* android.app.backup.FileBackupHelper
+* android.app.backup.SharedPreferenceBackupHelper
+* android.app.backup.BackupManager
+	* dataChanged()
+
+##### 测试
+``` bash
+$ adb shell bmgr backup com.example.backupandroid -- 请求备份
+$ adb shell bmgr run -- 强制备份
+$ adb uninstall com.example.backupandroid
+$ adb install com.example.backupandroid
+```
 
 ### Sensors and Location
+#### APIs
+* android.hardware.SensorManager
+	* getDefaultSensor()
+	* getSensorList()
+	* (un)registerListenere()
+	* requestTriggerSensor()
+	* cancelTriggerSensor()
+	* SENSOR_DELAY_NORMAL
+	* SENSOR_DELAY_UI
+	* SENSOR_DELAY_GAME
+	* SENSOR_DELAY_FASTEST
+* android.hardware.Sensor
+	* getResolution()
+	* getReportingMode()
+	* TYPE_ACCELEROMETER  (x, y, z)(m/s^2)
+	* TYPE_AMBIENT_TEMPERATURE  (℃)
+	* TYPE_GAME_ROTATION_VECTOR  (x, y, z)
+	* TYPE_GEOMAGNETIC_ROTATION_VECTOR (x, y, z)
+	* TYPE_GRAVITY  (x, y, z)(m/s^2)
+	* TYPE_GYROSCOPE  (x, y, z)(rad/s)
+	* TYPE_GYROSCOPE_UNCALIBRATED  (x, y, z)(rad/s)
+	* TYPE_HEART_RATE  (bpm)
+	* TYPE_LIGHT  (lx)
+	* TYPE_LINEAR_ACCELERATION (x, y, z)(m/s^2)
+	* TYPE_MAGNETIC_FIELD (x, y, z)(μT)
+	* TYPE_MAGNETIC_FIELD_UNCALIBRATED (x, y, z)(μT)
+	* TYPE_PRESSURE  (hPa/mbar)
+	* TYPE_PROXIMITY  (cm)
+	* TYPE_RELATIVE_HUMIDITY  (%)
+	* TYPE_ROTATION_VECTOR  (x, y, z, w)
+	* TYPE_SIGNIFICANT_MOTION  N/A
+	* TYPE_STEP_DETECTOR  (x)
+	* REPORTING_MODE_CONTINUOUS
+	* REPORTING_MODE_ON_CHANGE
+	* REPORTING_MODE_ONE_SHOT
+	* REPORTING_MODE_SPECIAL_TRIGGER
+* android.hardware.SensorEventListener
+	* onAccuracyChanged()
+	* onSensorChanged()
+* android.hardware.TriggerEventListener
+	* onTrigger()
+* android.hardware.SensorEvent
+	* accuracy
+	* sensor
+	* timestamp
+	* values
+
+#### 位置
+##### 权限
+* android.permission.ACCESS_COARSE_LOCATION  -- 基站和WiFi
+* android.permission.ACCESS_FINE_LOCATION  -- GPS，网络位置和WiFi综合
+
+##### APIs
+使用广播接收器监听位置提供者状态变化。
+有两种监听方式：
+1. 持续监听位置变化
+2. 到过给定地理位置附近时接收接近提醒。
+
+* android.location.LocationManager
+	* isProviderEnabled() -- 检查指定位置提供者是否可用
+	* requestLocationUpdates/removeUpdates()
+	* requestSingleUpdate()
+	* add/removeProximityAlert()
+	* getLastKnownLocation()
+	* GPS_PROVIDER
+	* NETWORK_PROVIDER
+	* PASSIVE_PROVIDER
+	* PROVIDERS_CHANGED_ACTION
+
+* android.location.LocationListener
+	* onLocationChanged
+	* onStatusChanged
+	* onProviderEnabled
+	* onProviderDisabled
+
+* android.location.Location
+	* HorizontalAccuracyMeters/..
+	* Altitude/Latitude
+	* Bearing -- 方向角度
+	* Provider
+	* Time
 
 ### Media and Camera
+#### 音频管理器
+
+* android.media.AudioManager
+	* isMicrophoneMute()
+	* setMicrophoneMute()
+	* isSpeakerphoneOn()
+	* setSpeakerphoneOn()
+	* get/setStreamVolume()
+	* getStreamMaxVolume()
+	* setStreamMute()
+	* setStreamSolo()
+	* isMusicActive()
+	* STREAM_ALARM
+	* STREAM_DTMF
+	* STREAM_MUSIC
+	* STREAM_NOTIFICATION
+	* STREAM_RING
+	* STREAM_SYSTEM
+	* STREAM_VOICE_CALL
+	* USE_DEFUALT_STREAM_TYPE
+	* FLAG_ALLOW_RINGER_MODES
+	* FLAG_PLAY_SOUND
+	* FLAG_REMOVE_SOUND_AND_VIBRATE
+	* FLAG_SHOW_UI
+	* FLAG_VIBRATE
+
+#### 播放音频
+* android.media.MediaPlayer
+	* setDataSource()
+	* setAudioStreamType()
+	* prepare() -- 密集访问IO，非UI线程调用。
+	* prepareAsync()
+	* setOnPreparedListener()
+	* start/stop/release()
+* android.media.AsyncPlayer  -- 网络或SD卡，一次播放一个。
+	* play()
+* android.media.SoundPool  -- 音频集合，适用于音效
+	* load/play/stop/uload/release()
+* android.media.SoundPool.Builder --- API 21新增
+	* setMaxStreams()
+	* setAudioAttributes()
+	* build()
+* android.media.AudioAttributes
+* android.media.AudioAttributes.Builder
+	* setContentType()
+	* setUsage()
+	* build()
+
+#### 录制音频
+* android.media.MediaRecorder
+	* setAudioSource()
+	* setAudioEncoder()
+	* setOutputFormat()
+	* setOutputFile()
+	* prepare()
+	* start()
+	* stop()
+	* release()
+* android.media.MediaRecorder.AudioSource
+	* CAMCORDER
+	* DEFAULT
+	* MIC
+	* REMOTE_SUBMIX
+	* VOICE_CALL
+	* VOICE_COMMUNICATION
+	* VOICE_DOWNLINK
+	* VOICE_RECOGNITION
+	* VOICE_UPLINK
+
+* android.media.MediaRecorder.AudioEncoder
+	* AMR_NB
+
+* android.media.MediaRecorder.AudioEncoder
+	* THREE_GPP
+
+* android.permission.RECORD_AUDIO
+
+#### 播放视频
+
+* android.view.SurfaceView
+	* getHolder()
+* android.view.Surface
+* android.view.SurfaceHolder
+	* getSurface()
+* android.view.SurfaceHolder.Callback
+	* surfaceCreated()
+	* surfaceChanged()
+	* surfaceDestoryed()
+* android.media.MediaPlayer
+	* setSurface()
+	* setScreenOnWhilePlaying()
+	* setDataSource()
+	* setOnPreparedListener()
+	* prepareAsync()
+	* release()
+* android.media.MediaPlayer.OnPreparedListener
+	* onPrepared()
+
+#### 录制音频
+
+* android.media.MediaRecorder
+	* setVideoSource()
+	* setVideoEncoder()
+* android.media.MediaRecorder.VideoSource
+	* CAMERA
+* android.media.MediaRecorder.VideoEncoder
+	* MPEG_4_SP
+
+#### 摄像机
+
+* android.permission.CAMERA
+* android.hardware.camera2.CameraManager
+	* getCameraIdList()
+	* getCameraCharacteristics()
+	* openCamera()
+* android.hardware.camera2.CameraCharacteristics
+	* get()
+	* LENS_FACING
+	* LENS_FACING_FRONT
+	* LENS_FACING_BACK
+	* SCALER_STREAM_CONFIGURATION_MAP
+* android.hardware.camera2.params.StreamConfigurationMap
+	* getOutputSizes()
+* android.hardware.camera2.CameraDevice
+	* createCaptureRequest()
+	* createCaptureSession()
+	* TEMPLATE_MANUAL
+	* TEMPLATE_PREVIEW
+	* TEMPLATE_RECORD
+	* TEMPLATE_STILL_CAPTURE
+	* TEMPLATE_VIDEO_SNAPSHOT
+	* TEMPLATE_ZERO_SHUTTER_LAG
+* android.hardware.camera2.CameraDevice.StateCallback
+	* onOpened()
+	* onError()
+	* onDisconnect()
+	* onClosed()
+* android.hardware.camera2.CameraCaptureSession
+	* capture()/..
+	* setRepeatingRequest()/..
+	* stopRepeating()
+* android.hardware.camera2.CameraCaptureSession.StateCallback
+	* onConfigured()
+	* onConfigureFailed()
+* android.hardware.camera2.CameraCaptureSession.CaptureCallback
+	* onConfigureCompleted()
+* android.view.SurfaceHolder
+	* setFixedSize()
+* android.hardware.camera2.CaptureRequest
+	* COLOR_CORRECTION_MODE
+	* CONTROL_AE_MODE/..
+	* FLASH_MODE
+	* JPEG_QUALITY
+	* SCALER_CROP_REGION
+	* SENSOR_SENSITIVITY
+
+* android.hardware.camera2.CaptureRequest.Builder
+	* addTarget()
+	* set()
+	* build()
