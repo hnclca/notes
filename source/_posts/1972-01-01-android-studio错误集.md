@@ -260,3 +260,29 @@ Write access is allowed from event dispatch thread only
 
 **问题原因**:
 JDK位置有误。更新kotlin plugin重启后，修复plugin错误重启时产生。
+
+
+### Resolved versions for app (26.1.0) and test app (27.1.1) differ.
+**问题现场**：
+```
+Error:Execution failed for task ':app:preDebugAndroidTestBuild'.
+> Conflict with dependency 'com.android.support:support-annotations' in project ':app'. Resolved versions for app (26.1.0) and test app (27.1.1) differ. See https://d.android.com/r/tools/test-apk-dependency-conflicts.html for details.
+```
+
+**问题原因**:
+依赖包中com.android.support:support-annotations的版本不一致。
+
+**解决方案**:
+* 修改依赖项，统一com.android.support:support-annotations版本；
+* 强制指定com.android.support:support-annotations版本；
+```
+// 项目build.gradle
+configurations.all{
+    resolutionStrategy {
+        force 'com.android.support:support-annotations:26.1.0'
+    }
+}
+```
+
+**参考资料**:
+[resolved-versions-for-app-26-1-0-and-test-app-27-1-1-differ](https://stackoverflow.com/questions/50120459/resolved-versions-for-app-26-1-0-and-test-app-27-1-1-differ?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa)

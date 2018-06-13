@@ -8,15 +8,85 @@ tags:
 	- javascript
 ---
 
-[TOC]
 [React Native](https://facebook.github.io/react-native/)学习笔记。
 
+### React Native工作机制
+#### React思想
+React提供了虚拟DOM层分离开发者描述界面和实际展示界面。在浏览器中渲染界面时，开发需要编辑浏览器的DOM即文档对象模型，全部DOM重新渲染开销很大，React通过在内存中计算虚拟DOM的差别，实现最少数量的浏览器DOM重渲染。
+
+React.js是面向浏览器DOM的，而React Native提供了跨平台的统一接口，使用桥接器调用主机平台API实现界面的渲染。
+
+#### 渲染生命周期
+
+React渲染流程：
+
+* 页面渲染
+* React组件加载
+* 渲染React组件
+* 状态或属性改变
+* 计算虚拟DOM差别
+* 重渲染React组件
+
+由于桥接器的存在，React Native的渲染流程有点差别。
+桥接器提供JS和主平台底层API和UI元素调用解析。由于RN不在主UI线程运行，主要执行异步调用。
 
 <!-- more -->
 
+### 快速开始
+#### CRNA （未成功）
+纯JS项目，不包含原生代码。
+依赖expo工具。expo支持的SDK版本较落后，不推荐此方式。
+
+#### react-native init
+生成模板，适合集成已有的Java项目。
+参照模板文件修改项目build.gradle文件。
+生成的模板文件中，targetSdkVersion版本为22，较低。
+安装完成后，要在开发者菜单【设备设置】中配置同网络电脑的IP及8081端口。
+
+``` bash
+$ npm install -g react-native-cli yarn
+$ react-native init MyReactNativeApp
+$ cd MyReactNativeApp
+$ react-native run-android -- 如果不正常，请手动安装应用运行包服务器
+$ yarn start -- 启动包服务器，启动之前先安装App
+```
+
 ### 基础
 #### 组件
-类似于安卓的View控件。render方法中实现每个控件的布局方法。
+React代码存在于React组件中，RN组件与此类似，只在渲染和样式上有所差别。
+
+##### 基本组件对应
+因为React面向浏览器平台，故组件元素为HTML元素，而RN则是平台专用React组件。UI组件的基类是跨平台View类，在iOS平台为UIView，在安卓平台为View，对应浏览器的DIV元素。
+部分RN组件是平台专用的，在组件名后添加平台后缀，比如DatePickerIOS。
+
+|React|React Native|
+|::|::|
+|div|View|
+|span|Text|
+|li, ul|FlatList|
+|img|Image|
+
+##### 渲染器和JSX
+JSX将HTML直接嵌入到JS代码中，实现模板和组件的关联。
+渲染器返回JSX格式的页面展示逻辑。
+
+``` javascript
+render() {
+    const txt = 'Hello';
+    function say(name){
+    	return 'I am '+name;
+    }
+    return (
+        <View>
+            <Text>This is a title!</Text>
+            <Text>{txt}</Text>
+            <View>
+            	<Text>{say('React')}</Text>
+            </View>
+        </View>
+	);
+}
+```
 
 ##### 定义并导出组件
 ``` javascript
@@ -41,28 +111,6 @@ class Main extends React.Component {
 ##### 注册组件访问入口
 ``` javascript
 AppRegistry.registerComponent('MyApp', () => Main);
-```
-
-##### 渲染器和JSX
-JSX将HTML直接嵌入到JS代码中，实现模板和组件的关联。
-渲染器返回JSX格式的页面展示逻辑。
-
-``` javascript
-render() {
-    const txt = 'Hello';
-    function say(name){
-    	return 'I am '+name;
-    }
-    return (
-        <View>
-            <Text>This is a title!</Text>
-            <Text>{txt}</Text>
-            <View>
-            	<Text>{say('React')}</Text>
-            </View>
-        </View>
-	);
-}
 ```
 
 ##### 组件生命周期
@@ -229,65 +277,112 @@ class Main extends Component {
 
 #### 样式
 内置组件的属性之一style。样式键值与CSS类似，除了命名采用驼峰式，而不是全小写，短横线分隔。
+##### 内联样式
+优点：快速更改
+缺点：低效（每次渲染要重建样式对象）
 
-##### 定义样式
-* StyleSheet.create()
-	* container
-		* flex
-		* backgroundColor
-	* text
-		* fontSize
-		* color
+``` js
+<Text>
+The quick <Text style={{fontStyle: "italic"}}>brown</Text> fox
+jumped over the lazy <Text style={{fontWeight: "bold"}}>dog</Text>.
+</Text>
+```
 
-##### 使用样式
-* View/Text/Image
-	* style
+##### 样式对象
+解决了内联样式每次渲染重建对象的问题
 
-##### 继承样式
+``` javascript
+const italic = {
+    fontStyle: "italic"
+};
+const bold = {
+    fontWeight: "bold"
+};
+...
+render() {
+    return (
+        <Text>
+            The quick <Text style={italic}>brown</Text> fox
+            jumped over the lazy <Text style={bold}>dog</Text>.
+        </Text>
+    );
+}
+```
 
-* View
-	* parentColor -- 将样式作为属性传递
-	* style={[BaseStyles.text, Styles.text]} -- 样式合成
+##### StyleSheet
+使用StyleSheet创建样式对象，而不是传递Js对象可以减少分配次数提高性能，更易于管理。因为StyleSheets是不可变的。
 
-##### 属性
-组件特有属性。
-RN中尺寸使用dp（设备无关像素）。
+``` js
+const styles = StyleSheet.create({
+    button: {
+        borderRadius: "8px",
+        backgroundColor: "#99CCFF"
+    },
+    accentText: {
+        fontSize: 18,
+        fontWeight: "bold"
+    }
+});
+```
 
-* View
-	* borderColor
-	* elevation
-	* opacity
-	* width/height
-	* flex -- 分配剩余空间，1代表全部
-		* 仅限父控件的剩余空间分配，如果父控件无width和height或flex值，父控件剩余的空间为0，仅指定flex值的子控件将不可见
-	* position
-		* absolute -- top/left为绝对值
-			* 可搭配transform属性
-		* relative -- 默认布局，top/left为相对值
-* Image
-	* resizeMode
-	* tintColor
-	* overlayColor
-* Text
-	* color
-	* fontFamily
-	* writingDirection
-* Flex
-	* flexDirection
-	* alignItems
-	* justifyContent
-* Transform
-	* transform
-	* rotation
+##### 合成样式
+合成样式遇到属性同名冲突时，优先选择右侧属性，负属性值将被忽略。
 
-#### 布局
+``` js
+class AccentButton extends Component {
+    render() {
+        return (
+            <Text style={[styles.button, styles.accentText, {color:
+            "#FFFFFF"}]}>
+            	{this.props.children}
+            </Text>
+        );
+	}
+}
+// 条件样式
+<View style={[styles.button, this.state.touching && styles.highlight]} />
+```
+
+##### 样式管理
+通用样式可以定义在独立的js文件中，供其他组件引用。
+样式可以更细致地划分为颜色、字体、边距等，组件通用的样式文件可置于styles目录下，组件专用的样式最好至于components目录下对应的组件目录中。
+
+``` js
+import { StyleSheet } from "react-native";
+const BaseStyles = StyleSheet.create({
+    text: {
+        color: "#FF00FF",
+        fontSize: 16
+    },
+    bold: {
+    	fontWeight: "bold"
+    }
+});
+export default BaseStyles;
+```
+
+##### 样式作为属性传递
+使用this.props.style实现默认属性重写。
+
+``` js
+class CustomizableText extends Component {
+    render() {
+        return (
+            <Text style={[{fontSize: 18}, this.props.style]}>
+            	Hello, world
+            </Text>
+        );
+    }
+}
+```
+
+#### 定位与布局
 ##### Flexbox
-为不同屏幕尺寸提供一致性布局的布局算法。
+CSS3布局模式，为不同屏幕尺寸提供一致性的布局算法。
 类似于安卓的线性布局的扩展。
 通常组合flexDirection, alignItems和justifyContent确保正确布局。
-在安卓中flexDirection默认为column，flex仅支持单个数字。
 
-* flex -- 分配比例
+* flex -- 权重，限个位数字
 * flexDirection -- 方向
 	* row
 	* column(default)
@@ -295,18 +390,25 @@ RN中尺寸使用dp（设备无关像素）。
 	* flex-start/end/
 	* center
 	* space-around/between/evently
-* alignItems -- 所有子item次轴的对齐方式
+* flexWrap -- 是否折行
+* alignItems -- 所有子item在次轴上的对齐方式
 	* flex-start/end
 	* center
 	* stretch -- 要求子控件次轴上无具体尺寸值，否则无效果
 * alignSelf -- 当前item对齐方式
-* flexWrap -- 是否折行
-* 方框模型
+* 其他影响布局属性
+	* width/height
 	* margin[Oriented]
 	* border[Oriented]Width
 	* padding[Oriented]
 
-##### 尺寸
+##### 定位
+由于没有z轴，在其他组件顶部显示组件有点麻烦，绝对定位益于解决该问题。
+
+* position
+	* absolute -- 相对父组件的位置
+
+##### 屏幕尺寸
 
 * Dimensions
 	* window
@@ -759,21 +861,11 @@ async function getMoviesFromApi() {
 RN内置API，可直接使用，或使用封装后的frisbee或axios第三方开源库。
 
 ``` javascript
-var request = new XMLHttpRequest();
-request.onreadystatechange = (e) => {
-  if (request.readyState !== 4) {
-    return;
-  }
-
-  if (request.status === 200) {
-    console.log('success', request.responseText);
-  } else {
-    console.warn('error');
-  }
-};
-
-request.open('GET', 'https://mywebsite.com/endpoint/');
-request.send();
+let xhr = new XMLHttpRequest();
+xhr.open('POST', 'http://posttestserver.com/post.php');
+let formdata = new FormData();
+formdata.append('image', {...this.state.photo, name: 'image.jpg'});
+xhr.send(formdata)
 ```
 
 #### WebSocket
@@ -804,16 +896,72 @@ ws.onclose = (e) => {
 
 
 ### 持久化
+#### AsyncStorage
+AsyncStorage的键名可以是任意字符串， 习惯格式：@AppName:key。
 
-* AsyncStorage
-* redux-persist
+``` js
+const STORAGE_KEY = '@SmarterWeather:zip'
+// 获取
+AsyncStorage.getItem(STORAGE_KEY)
+.then((value) => {
+if (value !== null) {
+this._getForecastForZip(value);
+}
+})
+.catch((error) => console.log('AsyncStorage error: ' +
+error.message))
+.done();
+// 设置
+AsyncStorage.setItem(STORAGE_KEY, zip)
+.then(() => console.log('Saved selection to disk: ' + zip))
+.catch((error) => console.log('AsyncStorage error: ' +
+error.message))
+.done();
+```
+
+#### redux-persist
+
+### 平台特性
+#### 定位
+由于位置信息是敏感信息，需要按平台要求申请定位权限。
+
+``` js
+// 获取当前位置
+navigator.geolocation.getCurrentPosition(
+    initialPosition => { ... },
+    error => { alert(error.message); },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
+);
+// 位置监听
+this.watchID = navigator.geolocation.watchPosition((position) => {
+this.setState({position: position});
+});
+componentWillUnmount() {
+navigator.geolocation.clearWatch(this.watchID);
+}
+```
+
+#### 相册
+
+``` js
+import { CameraRoll } from "react-native";
+CameraRoll.getPhotos(
+    {first: 1},
+    (data) => {
+    console.log(data);
+    },
+    (error) => {
+    console.warn(error);
+});
+```
 
 ### 页面导航
 #### React Navigation
-npm安装react-navigation
+yarn安装react-navigation
 
 ``` javascript
 import {
+
   StackNavigator,
 } from 'react-navigation';
 
@@ -967,7 +1115,6 @@ IOS忽略的边角样式属性有：
 
 ### 动画
 #### Animated API
-
 ##### 支持组件类型
 * View
 * Text
@@ -1077,7 +1224,6 @@ UIManager.setLayoutAnimationEnabledExperimental &&
 ```
 
 #### 其他
-
 ##### requestAnimationFrame()
 接收函数方法参数，让其在下次重绘前执行。是所有基于Js动画APIs的基础构件。一般情况下无需直接调用该方法。
 
@@ -1170,7 +1316,6 @@ XCode: 【通用】-【部署】-【设备方向】，操作前需要在设备�
 Android: 清单文件中的android:screenOrientation=”portrait”属性。
 
 ### 计时器
-
 #### Timers
 
 * set/clearTimeout -- 尽可能快地触发
@@ -1218,7 +1363,6 @@ var Component = createReactClass({
 ```
 
 ### 调试
-
 #### 应用内开发者菜单
 ##### 启动快捷键（IOS）
 RN支持少量用于IOS模拟器的快捷键。
@@ -1298,7 +1442,7 @@ $ node /path/to/launchDebugger.js --port 2345 --type ReactNative /path/to/reactN
 ``` bash
 // 全局安装
 $ npm install -g react-devtools
-$ react-devtools
+$ react-devtools -- 启动应用
 
 // 仅当前项目安装，命令执行目录，项目目录
 $ npm install --save-dev react-devtools
@@ -1373,6 +1517,49 @@ public void onCreate() {
 
   SoLoader.init(this, /* native exopackage */ false);
 }
+```
+
+### 测试
+#### Jest
+[官方文档](https://facebook.github.io/jest/)
+测试用例目录：{project name}/__test__
+
+``` bash
+$ yarn add jest-cli --dev
+// react-native init已自动安装
+$ yarn test
+```
+
+##### 单元测试
+与渲染无关的逻辑测试。
+
+``` js
+'use strict';
+describe('a silly test', function() {
+    it('expects true to be true', function() {
+    	expect(true).toBe(true);
+    });
+});
+```
+
+##### 快照测试
+通过生成快照，修改代码后生成比较快照差异，判断是否产生了错误。
+生成的快照文件需要纳入源代码控制。
+
+``` bash
+$ yarn add react-test-render --dev
+```
+
+示例代码：
+
+``` js
+import React from "react";
+import FlexDemo from "../FlexDemo";
+import renderer from "react-test-renderer";
+test("renders correctly", () => {
+    const tree = renderer.create(<FlexDemo />).toJSON();
+    expect(tree).toMatchSnapshot();
+})
 ```
 
 ### 性能
@@ -2001,6 +2188,28 @@ $ react-native upgrade
 ##### 手动升级
 根据版本发行日志，识别需要手动更改的地方。
 
+### 安装第三方库
+#### 纯JS库
+yarn安装库后，会修改项目下package.json。
+
+``` bash
+$ yarn add {package-name}
+```
+
+#### 包含原生代码的库
+不是所有的App都会使用所有的原生功能，包含支持功能的代码会影响App的大小。因此RN使用独立的静态库提供功能特性。
+RN提供的静态库目录：react-native/Libraries。
+其中一些是纯JS库，只需require导入，一些库依赖一些原生代码，否则直接添加会抛出异常。
+链接会修改iOS和Android项目文件，对CRNA应用无效。
+
+``` bash
+$ yarn add {package-name}
+$ react-native link // 自动链接
+```
+
+#### 搜索第三方库
+在npm库中搜索"react-native-"。
+
 ### 原生模块
 为了复用原生代码或获取高性能，app有时需要访问平台API，RN未提供相应模块。
 RN允许编写原生代码，访问全部平台特性。
@@ -2140,7 +2349,133 @@ swift静态库要求Xcode 9或以上版本。
 #### Android
 推荐开启Gradle守护进程，加速构建。在gradle.properties中添加org.gradle.daemon=true。
 
-##### Toast模块
+##### 原生模块实现
+
+* 继承ReactContextBaseJavaModule类
+* 实现getName方法返回原生模块名 -- React.NativeModules.XXX
+* 选择实现getConstants导出常量
+* 使用ReactMethod注解公开原生模块方法
+	* 方法返回值只能是void类型，因为RN桥接方法是异步的
+
+##### 参数类型
+
+* B[oolean] -- Bool
+* I[nteger] -> Number
+* D[ouble] -> Number
+* F[loat] -> Number
+* S[tring] -> String
+* C[allback] -> function
+* R[eadableMap] -> Object
+* R[eadableArray] -> Array
+
+##### 注册原生模块
+
+* 继承ReactPackage实现createNativeModules方法
+* 继承ReactApplication类在方法getPackages引入自定义ReactPackage
+* 使用Js模块包装原生模块
+	* 导入react-native的NativeModules模块
+	* module.exports = NativeModules.XXXX
+* 在Js中使用
+	* 导入包装的JS模块
+	* 调用原生模块的方法
+
+##### 回调
+原生方法参数最后允许回调参数Callback，包括错误和正确回调。
+因为桥接方法的异步性，回调不是及时的。
+
+##### Promise
+原生方法参数最后允许Promise类型，支持ES2016的async/await语法。
+
+* promise.resolve(map) -- 执行成功
+* promise.reject(E_LAYOUT_ERROR, e) -- 执行失败
+
+``` js
+async function measureLayout() {
+  try {
+    var {relativeX, relativeY, width, height} = await UIManager.measureLayout(
+      100,
+      100
+    );
+
+    console.log(relativeX + ':' + relativeY + ':' + width + ':' + height);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+measureLayout();
+```
+
+##### 线程
+原生模块方法不应对方法执行线程做任何假定。当前的线程的分配方案将来可能变动。
+如果回调可能阻塞，应在内部管理的工作线程执行此方法。
+
+##### 向JS发送事件
+原生模块方法可以直接发送事件给JS，而无需直接调用。
+使用ReactContext获取的RCTDeviceEventEmitter的emit发送事件。
+
+Java原生层发送事件：
+``` java
+// Subscribable.Mixin监听事件
+...
+private void sendEvent(ReactContext reactContext,
+                       String eventName,
+                       @Nullable WritableMap params) {
+  reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+      .emit(eventName, params);
+}
+...
+WritableMap params = Arguments.createMap();
+...
+sendEvent(reactContext, "keyboardWillShow", params);
+```
+
+JS层监听事件：
+``` JS
+import { DeviceEventEmitter } from 'react-native';
+...
+
+var ScrollResponderMixin = {
+  mixins: [Subscribable.Mixin],
+
+  componentWillMount: function() {
+    ...
+    this.addListenerOn(DeviceEventEmitter,
+                       'keyboardWillShow',
+                       this.scrollResponderKeyboardWillShow);
+    ...
+  },
+  scrollResponderKeyboardWillShow:function(e: Event) {
+    this.keyboardWillOpenTo = e;
+    this.props.onKeyboardWillShow && this.props.onKeyboardWillShow(e);
+  },
+
+// DeviceEventEmitter监听事件
+...
+componentWillMount: function() {
+  DeviceEventEmitter.addListener('keyboardWillShow', function(e: Event) {
+    // handle event.
+  });
+}
+...
+```
+
+##### 获取Activity结果
+监听onActivityResult方法。
+
+* 实现Activity事件监听器
+	* 继承BaseActivityEventListener
+	* 实现ActivityEventListener
+* 在模块构造器中注册监听器
+	* reactContext.addActivityEventListener(listener)
+
+##### 监听生命周期事件
+
+* 实现Activity生命周期监听器
+	* 实现LifecycleEventListener
+* 在模块构造器中注册监听器
+	* reactContext.addLifecycleEventListener(listener)
 
 ### 原生UI组件
 RN仅包装了最关键的平台组件，如ScrollView和TextInput。
@@ -2536,34 +2871,26 @@ var styles = StyleSheet.create({
 ```
 
 #### Android
+##### 实现原生UI组件
 
-### 链接库（IOS）
-不是所有的App都会使用所有的原生功能，包含支持功能的代码会影响App的大小。因此RN使用独立的静态库提供功能特性。
-RN提供的静态库目录：react-native/Libraries。
-其中一些是纯JS库，只需require导入，一些库依赖一些原生代码，否则直接添加会抛出异常。
+* 继承ViewManager，简单的继承SimpleViewManager即可
+	* 实现getName方法定义模块名称供JS引用
+	* 实现createViewInstance方法
+	* ReactProp或ReactPropGroup公开属性设置器
+		* public访问权限，返回值为void，参数为支持的参数类型
+		* 注解必须有String类型的参数name
+		* Boolean, Int, Float属性可在注解中指定默认值
+* 在自定义的ReactPackage的createViewManagers中注册
+* 实现JS模块包装类
+	* 引用原生UI组件，设置属性
+	* requireNativeComponent连接组件与属性
+		* 使用nativeOnly屏蔽部分属性
 
-#### 链接含有原生代码的静态库步骤
-##### 自动链接
+##### 事件
 
-1. 安装有原生依赖的库
-2. 链接原生依赖
-
-``` bash
-//--save: 添加到package.json的dependencies块中
-//--save-dev：添加到package.json的devDependencies块中
-$ npm install {library-with-native-dependencies} --save
-// 如果IOS项目使用CocoaPods且链接库有podspec文件，react-native link使用podfile链接库
-$ react-native link
-```
-
-##### 手动链接
-如果库包含原生代码，里面一定有后缀为.xcodeproj的文件。
-
-1. 将.xcodeproj文件放到Xcode的Libraries中
-2. 打开主项目文件，选择构建阶段，将刚刚放入Xcode的Libraries中的库的Products文件导入到【链接二进制库】
-3. 打开主项目文件，选择构建设置，找到【头文件搜索路径】，添加库的头文件
-	* 仅当需要在原生代码中使用库内容时，执行此步骤
-	* 不推荐使用【递归】，特别在使用cocoapods时，可能引发构建失败
+* 继承React.Component实现onReceiveNativeEvent方法，完成事件接收（JS）
+* 自定义ViewManager中实现getExportedCustomBubblingEventTypeConstants方法注册事件回调属性
+* JS包装模块中完成事件方法调用
 
 ### 运行模拟器
 #### iOS
@@ -2571,6 +2898,13 @@ $ react-native link
 $ react-native run-ios
 $ react-native run-ios --simulator="iPhone 4s"
 $ xcrun simctl list devices -- 查看设备名称
+```
+
+#### Android
+注意这里run-android打开的指定应用下.MainActivity文件，如果应用内主页Activity不是MainActivity则无法打开应用。
+
+``` bash
+$ react-native run-android
 ```
 
 ### 原生代码与RN代码交互（IOS）
@@ -2651,3 +2985,158 @@ App可见性可在主应用外提供自定义的功能和内容。
 
 ##### 其他应用扩展
 比今日部件内存稍大，如自定义键盘扩展为48MB，共享扩展为120MB。
+
+### 无头JS(Anroid)
+指在后台用JS执行任务，如同步数据、处理推送通知或播放音乐。
+
+#### JS API
+
+* 在原生模块的构造函数中注册
+* 在JS包装模块中实现任务方法
+
+``` js
+// 注册
+AppRegistry.registerHeadlessTask('SomeTaskName', () => require('SomeTaskName'));
+
+// 实现
+module.exports = async (taskData) => {
+  // do stuff
+};
+```
+
+#### Java API
+
+* 继承HeadlessJsTaskService类，重写getTaskConfig方法
+* 在清单中注册
+* 启动服务
+
+#### 注意事项
+
+* 默认在应用在前台运行时，执行后台任务会导致应用崩溃
+* 如果在广播中启动应用，在要onReceive()方法返回前调用HeadlessJsTaskService.acquireWakeLockNow()
+	* 使用广播启动服务，在onReceive方法中执行前台判断
+
+``` java
+public class NetworkChangeReceiver extends BroadcastReceiver {
+
+    @Override
+    public void onReceive(final Context context, final Intent intent) {
+        /**
+          This part will be called everytime network connection is changed
+          e.g. Connected -> Not Connected
+        **/
+        if (!isAppOnForeground((context))) {
+            /**
+              We will start our service and send extra info about
+              network connections
+            **/
+            boolean hasInternet = isNetworkAvailable(context);
+            Intent serviceIntent = new Intent(context, MyTaskService.class);
+            serviceIntent.putExtra("hasInternet", hasInternet);
+            context.startService(serviceIntent);
+            HeadlessJsTaskService.acquireWakeLockNow(context);
+        }
+    }
+
+    private boolean isAppOnForeground(Context context) {
+        /**
+          We need to check if app is in foreground otherwise the app will crash.
+         http://stackoverflow.com/questions/8489993/check-android-application-is-in-foreground-or-not
+        **/
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> appProcesses =
+        activityManager.getRunningAppProcesses();
+        if (appProcesses == null) {
+            return false;
+        }
+        final String packageName = context.getPackageName();
+        for (ActivityManager.RunningAppProcessInfo appProcess : appProcesses) {
+            if (appProcess.importance ==
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
+             appProcess.processName.equals(packageName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager cm = (ConnectivityManager)
+        context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return (netInfo != null && netInfo.isConnected());
+    }
+}
+```
+
+### Apk签名（Android）
+
+#### 生成签名文件
+
+``` bash
+$ keytool -genkey -v -keystore my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+```
+
+#### 配置签名
+在项目build.gradle中进行签名配置：
+
+``` gradle
+// gradle.properties
+MYAPP_RELEASE_STORE_FILE=my-release-key.keystore
+MYAPP_RELEASE_KEY_ALIAS=my-key-alias
+MYAPP_RELEASE_STORE_PASSWORD=*****
+MYAPP_RELEASE_KEY_PASSWORD=*****
+
+// 项目build.gradle
+...
+android {
+    ...
+    defaultConfig { ... }
+    signingConfigs {
+        release {
+            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
+                storeFile file(MYAPP_RELEASE_STORE_FILE)
+                storePassword MYAPP_RELEASE_STORE_PASSWORD
+                keyAlias MYAPP_RELEASE_KEY_ALIAS
+                keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            }
+        }
+    }
+    buildTypes {
+        release {
+            ...
+            signingConfig signingConfigs.release
+        }
+    }
+}
+...
+```
+
+#### 签名打包
+注意gradle.properties中org.gradle.configureondemand=true会阻止发行包打包时忽略JS和assets文件。
+
+``` bash
+$ cd android && ./gradlew assembleRelease
+```
+
+#### 测试
+variant=release要求在build.gradle配置签名信息。
+
+``` bash
+$ react-native run-android --variant=release
+```
+
+#### 动态属性配置
+
+``` gradle
+// 是否拆分Apk
+def enableSeparateBuildPerCPUArchitecture = true
+
+// 是否生成通用Apk
+universalApk true
+
+// 是否启用混淆
+def enableProguardInReleaseBuilds = true
+```
+
+

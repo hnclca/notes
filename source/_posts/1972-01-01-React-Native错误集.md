@@ -141,3 +141,22 @@ react native 0.49.1以后入口不区分android和ios，只有一个入口文件
 
 #### 解决方案
 创建index.js文件，在文件内导入index.android.js和index.ios.js。
+
+### Invariant Violation: Element type is invalid
+
+#### 错误信息
+```
+Invariant Violation: Element type is invalid: expected a string( for built-in components) or a class/function (for composite components) but got: object. You likely forgot to export your component from the file it's defined in.
+```
+
+#### 错误原因
+自定义的组件未写export导出语句。
+
+### Error: The &lt;Image&gt; component cannot contain children.
+#### 错误信息
+```
+Error: The <Image> component cannot contain children. If you want to render content on top of the image, consider using <ImageBackgound>
+```
+
+#### 错误原因
+0.46以后提供了图片背景专用组件ImageBackground.
